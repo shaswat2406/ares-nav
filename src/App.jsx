@@ -12,10 +12,10 @@ import { AstrobiologyLabModal } from './components/AstrobiologyLabModal';
 import { PRECOMPUTED_ROUTES, SCIENCE_TARGETS } from './data/jezeroData';
 import { computeCustomAStarRoute } from './utils/astarEngine';
 import { sfx } from './utils/soundFX';
-import { Rocket, ShieldAlert, Navigation, Layers, Box, Globe, Microscope, FileDown, Database, Eye, EyeOff, Radio, Target } from 'lucide-react';
+import { Rocket, ShieldAlert, Navigation, Layers, Box, Globe, Microscope, FileDown, Database, Eye, EyeOff, Radio, Target, User } from 'lucide-react';
 
 function App() {
-  const [viewMode, setViewMode] = useState('surface3d'); // Full-Bleed 3D by default!
+  const [viewMode, setViewMode] = useState('surface3d');
   const [activeSite, setActiveSite] = useState('jezero');
   const [routeType, setRouteType] = useState('safe');
   const [customRoute, setCustomRoute] = useState(null);
@@ -24,6 +24,7 @@ function App() {
   const [simulationProgress, setSimulationProgress] = useState(0);
   const [dustStorm, setDustStorm] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
+  const [isFirstPerson, setIsFirstPerson] = useState(false); // Visor POV Camera!
 
   // Modals
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -37,7 +38,6 @@ function App() {
     targets: true
   });
 
-  // When dust storm is active and direct hazard route is selected, offer emergency vector
   const activeRoute = dustStorm && routeType === 'direct' 
     ? PRECOMPUTED_ROUTES.emergency 
     : (routeType === 'custom' && customRoute ? customRoute : PRECOMPUTED_ROUTES[routeType]);
@@ -59,6 +59,11 @@ function App() {
     sfx.scienceSuccess();
   };
 
+  const toggleFirstPerson = () => {
+    sfx.click();
+    setIsFirstPerson(!isFirstPerson);
+  };
+
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#010206] select-none">
       {/* ============================================================== */}
@@ -75,6 +80,7 @@ function App() {
             simulationProgress={simulationProgress}
             dustStorm={dustStorm}
             showLabels={showLabels}
+            isFirstPerson={isFirstPerson}
           />
         ) : viewMode === 'gis' ? (
           <MarsTrekGISView />
@@ -93,7 +99,7 @@ function App() {
       {/* 2. FLOATING AEROSPACE COMMAND HEADER (TOP)                      */}
       {/* ============================================================== */}
       <header className="absolute top-4 left-4 right-4 z-20 flex flex-col md:flex-row items-center justify-between gap-3 pointer-events-none">
-        {/* Top-Left Mission Branding */}
+        {/* Top-Left Branding */}
         <div className="hud-glass hud-corner-tl hud-corner-br rounded-2xl px-4 py-2.5 flex items-center space-x-3 pointer-events-auto border-cyan-500/30">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 via-sky-600 to-blue-700 flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.4)] border border-cyan-300/40">
             <Rocket className="w-5 h-5 text-slate-950 transform -rotate-45" />
@@ -101,7 +107,7 @@ function App() {
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-heading font-extrabold text-sm md:text-base tracking-widest text-slate-100 uppercase">
-                ARES-NAV <span className="text-cyan-400 text-[10px] font-mono-num px-1.5 py-0.5 rounded border border-cyan-500/50 bg-cyan-950/40 font-bold">TACTICAL HUD // v3.5</span>
+                ARES-NAV <span className="text-cyan-400 text-[10px] font-mono-num px-1.5 py-0.5 rounded border border-cyan-500/50 bg-cyan-950/40 font-bold">TACTICAL HUD // v3.8</span>
               </h1>
               <span className="text-[10px] bg-slate-950/90 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
@@ -114,9 +120,22 @@ function App() {
           </div>
         </div>
 
-        {/* Top-Right Mission Tools & Navigation Bar */}
+        {/* Top-Right Tools */}
         <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
-          {/* Dimension Mode Toggle */}
+          {/* 🥽 FIRST-PERSON VISOR POV TOGGLE BUTTON */}
+          <button
+            onClick={toggleFirstPerson}
+            className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all border ${
+              isFirstPerson
+                ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.7)] animate-pulse'
+                : 'hud-glass text-cyan-300 border-cyan-500/40 hover:border-cyan-300'
+            }`}
+          >
+            <User className="w-3.5 h-3.5" />
+            {isFirstPerson ? '🥽 VISOR POV: ACTIVE' : 'SWITCH TO VISOR POV'}
+          </button>
+
+          {/* Mode Switcher */}
           <div className="hud-glass rounded-xl p-1 flex items-center border-cyan-500/30">
             <button
               onClick={() => {
@@ -169,13 +188,12 @@ function App() {
               setShowLabels(!showLabels);
             }}
             className="hud-glass px-2.5 py-1.5 rounded-xl text-xs font-mono text-slate-300 hover:text-cyan-300 border-cyan-500/30 flex items-center gap-1 cursor-pointer"
-            title="Toggle 3D Waypoint Labels"
           >
             {showLabels ? <Eye className="w-3.5 h-3.5 text-cyan-400" /> : <EyeOff className="w-3.5 h-3.5 text-slate-500" />}
             <span>LABELS: {showLabels ? 'ON' : 'OFF'}</span>
           </button>
 
-          {/* Data & Physics Specs Modal */}
+          {/* Data Specs Modal */}
           <button
             onClick={() => {
               sfx.click();
@@ -184,10 +202,10 @@ function App() {
             className="hud-glass px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-cyan-300 hover:text-white border-cyan-500/40 flex items-center gap-1.5 cursor-pointer shadow-lg hover:border-cyan-400"
           >
             <Database className="w-3.5 h-3.5 text-cyan-400" />
-            DATA &amp; PHYSICS SPECS
+            SPECS
           </button>
 
-          {/* Astrobiology Raman Lab */}
+          {/* Astrobiology Lab */}
           <button
             onClick={() => {
               sfx.click();
@@ -196,7 +214,7 @@ function App() {
             className="hud-glass px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-purple-300 hover:text-purple-100 border-purple-500/40 flex items-center gap-1.5 cursor-pointer shadow-lg hover:border-purple-400"
           >
             <Microscope className="w-3.5 h-3.5 text-purple-400" />
-            ASTROBIOLOGY LAB
+            LAB
           </button>
 
           {/* Export Flight Plan */}

@@ -1,10 +1,10 @@
-import React, { useRef, useMemo, useState } from 'react';
+import React, { useRef, useMemo, useState, useEffect } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Float, Html, Stars, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { HABITAT_BASE, SCIENCE_TARGETS, HAZARD_ZONES } from '../data/jezeroData';
 import { sfx } from '../utils/soundFX';
-import { Radio, AlertTriangle } from 'lucide-react';
+import { Radio, AlertTriangle, Eye, Compass } from 'lucide-react';
 
 // Realistic Martian Atmosphere & Dynamic Dust Storm Simulation
 function MartianAtmosphere({ dustStorm }) {
@@ -12,7 +12,6 @@ function MartianAtmosphere({ dustStorm }) {
     <>
       <Stars radius={250} depth={80} count={dustStorm ? 800 : 6000} factor={5} saturation={0.6} fade speed={1.2} />
       
-      {/* Ambient solar dust motes */}
       <Sparkles
         count={dustStorm ? 1200 : 350}
         scale={[160, dustStorm ? 60 : 35, 160]}
@@ -36,12 +35,11 @@ function MartianAtmosphere({ dustStorm }) {
   );
 }
 
-// Cinematic Photorealistic Martian Surface Terrain
-// Natural Mars regolith colors with subtle, high-contrast overlay highlights when sensors are ON
+// Photorealistic Jezero Crater Surface Terrain
 function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
   const meshRef = useRef();
 
-  const { geometry, texture } = useMemo(() => {
+  const { geometry } = useMemo(() => {
     const size = 160;
     const segments = 240;
     const geom = new THREE.PlaneGeometry(size, size, segments, segments);
@@ -57,7 +55,7 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
 
       let height = -2.5;
 
-      // 1. Western River Delta (Elevated plateau where mudstones formed)
+      // 1. Western River Delta
       if (x < -8 && x > -55 && Math.abs(z) < 35) {
         const deltaProgress = (Math.abs(x) - 8) / 40.0;
         const deltaFanShape = Math.max(0, 1.0 - Math.abs(z) / (15 + deltaProgress * 25));
@@ -72,7 +70,7 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
         height -= canyonDepth;
       }
 
-      // 3. Kodiak Butte (Steep isolated mesa)
+      // 3. Kodiak Butte
       const dKodiak = Math.sqrt((x - 14) ** 2 + (z - 22) ** 2);
       if (dKodiak < 7.0) {
         const butteFactor = Math.cos((dKodiak / 7.0) * (Math.PI / 2));
@@ -93,7 +91,7 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
         height += Math.pow(rimDist * 0.35, 1.8);
       }
 
-      // Sand dunes & micro-texture
+      // Micro-texture
       height += Math.sin(x * 0.4) * Math.cos(z * 0.4) * 0.6;
       height += Math.sin(x * 1.8 + z * 1.2) * 0.15;
 
@@ -103,8 +101,7 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
     geom.computeVertexNormals();
     const normals = geom.attributes.normal;
 
-    // Authentic Mars Palette: Ochre, rust, deep terracotta, basalt shadows
-    // (NO bright rainbow colors!)
+    // Authentic Mars Regolith Palette
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const z = pos.getZ(i);
@@ -112,34 +109,28 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
       const ny = normals.getY(i);
       const slopeDeg = Math.acos(Math.min(1.0, Math.max(0.0, ny))) * (180 / Math.PI);
 
-      // Base: Natural Mars Iron-Oxide Regolith with geological elevation variation
       let r = 0.72 + (y * 0.02);
       let g = 0.31 + (y * 0.01);
       let b = 0.14;
 
-      // Dark basaltic soil in canyon bed and crater base
       if (y < -2.0) {
         r *= 0.75;
         g *= 0.65;
         b *= 0.60;
       }
 
-      // Silt/clay delta deposits (natural dusty desert tan)
       if (x < -10 && x > -50 && Math.abs(z) < 30) {
         r = 0.78;
         g = 0.42;
         b = 0.22;
       }
 
-      // Layer 1: Slope Hazard Warning (Only highlighted if user toggles Hazard Layer ON)
-      // Subtle glowing crimson rim tint on impassable slopes (>15 deg)
       if (activeLayers.hazards && slopeDeg > 15.0) {
         r = Math.min(1.0, r * 1.4 + 0.3);
         g *= 0.3;
         b *= 0.2;
       }
 
-      // Layer 2: CRISM Spectral Mineralogy (Targeted, tasteful violet-tinted accent, NOT rainbow)
       if (activeLayers.mineralogy && ((x < -15 && x > -35 && Math.abs(z) < 18) || (Math.sqrt((x - 14)**2 + (z - 22)**2) < 5.0))) {
         r = 0.58;
         g = 0.28;
@@ -152,41 +143,7 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
     }
 
     geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
-
-    // High-Resolution 2048px Photorealistic Mars Surface Texture
-    const canvas = document.createElement('canvas');
-    canvas.width = 2048;
-    canvas.height = 2048;
-    const ctx = canvas.getContext('2d');
-
-    // Rich Mars regolith gradient
-    const grad = ctx.createRadialGradient(1024, 1024, 80, 1024, 1024, 1300);
-    grad.addColorStop(0.0, '#a53c12'); // Rich Mars rust
-    grad.addColorStop(0.35, '#c55219'); // Terracotta plains
-    grad.addColorStop(0.70, '#782709'); // Dark volcanic basalt
-    grad.addColorStop(1.0, '#381003'); // Deep crater boundary
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 2048, 2048);
-
-    // Delta sedimentation channel
-    ctx.fillStyle = 'rgba(215, 145, 95, 0.35)';
-    ctx.beginPath();
-    ctx.arc(600, 1024, 450, 0, Math.PI * 2);
-    ctx.fill();
-
-    // High density sand ripples & fine rock ejecta
-    for (let i = 0; i < 30000; i++) {
-      const px = Math.random() * 2048;
-      const py = Math.random() * 2048;
-      const sz = Math.random() * 2.5;
-      ctx.fillStyle = Math.random() > 0.55 
-        ? 'rgba(255, 200, 150, 0.22)' 
-        : 'rgba(25, 8, 2, 0.32)';
-      ctx.fillRect(px, py, sz, sz);
-    }
-
-    const tex = new THREE.CanvasTexture(canvas);
-    return { geometry: geom, texture: tex };
+    return { geometry: geom };
   }, [activeLayers]);
 
   const handleClick = (e) => {
@@ -209,32 +166,55 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
   );
 }
 
-// Compact Holographic Waypoint Pins (with Hover expansion & Label Toggle)
+// Camera Controller: Handles Orbit Mode vs. First-Person Visor POV
+function CameraRig({ isFirstPerson, astronautPos, route, progressPercent }) {
+  useFrame(({ camera }) => {
+    if (isFirstPerson && astronautPos) {
+      // Position camera right at astronaut eye level (1.8m above Martian surface)
+      const eyeLevel = new THREE.Vector3(astronautPos[0], astronautPos[1] + 1.2, astronautPos[2]);
+      camera.position.lerp(eyeLevel, 0.15);
+
+      // Determine look-ahead target along path
+      const totalWps = route.waypoints.length;
+      const nextIndex = Math.min(
+        Math.floor((progressPercent / 100) * (totalWps - 1)) + 1,
+        totalWps - 1
+      );
+      const nextWp = route.waypoints[nextIndex];
+      const lookX = (nextWp[1] - 77.4508) * 800;
+      const lookZ = -(nextWp[0] - 18.4447) * 800;
+
+      // Smoothly steer head direction towards upcoming waypoint
+      const lookTarget = new THREE.Vector3(lookX, astronautPos[1] + 1.2, lookZ);
+      camera.lookAt(lookTarget);
+    }
+  });
+
+  return null;
+}
+
+// Compact Holographic Waypoint Pins
 function HologramWaypointPin({ position, label, subtext, color, onClick, showLabels }) {
   const [hovered, setHovered] = useState(false);
 
   return (
     <group position={position}>
       <Float speed={2.5} rotationIntensity={0.2} floatIntensity={0.4}>
-        {/* Glowing Pin Tip */}
         <mesh position={[0, 2.2, 0]}>
           <octahedronGeometry args={[0.9, 0]} />
           <meshStandardMaterial color={color} emissive={color} emissiveIntensity={hovered ? 1.8 : 1.1} />
         </mesh>
-        {/* Holographic Stalk */}
         <mesh position={[0, 1.1, 0]}>
           <cylinderGeometry args={[0.07, 0.07, 2.2]} />
           <meshBasicMaterial color={color} />
         </mesh>
       </Float>
 
-      {/* Holographic Base Ring */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
         <ringGeometry args={[0.8, 1.6, 24]} />
         <meshBasicMaterial color={color} transparent opacity={0.4} side={THREE.DoubleSide} />
       </mesh>
 
-      {/* Glass Card on Hover or when Labels are ON */}
       {(showLabels || hovered) && (
         <Html distanceFactor={35} position={[0, 3.8, 0]} center>
           <div
@@ -287,7 +267,7 @@ function Route3DLine({ route }) {
 }
 
 // 3D Astronaut Avatar
-function AstronautAvatar({ progressPercent, route }) {
+function AstronautAvatar({ progressPercent, route, isFirstPerson }) {
   const avatarRef = useRef();
 
   const pos = useMemo(() => {
@@ -307,6 +287,9 @@ function AstronautAvatar({ progressPercent, route }) {
       avatarRef.current.rotation.y += 0.03;
     }
   });
+
+  // Hide 3D body if inside first-person helmet view
+  if (isFirstPerson) return null;
 
   return (
     <group position={pos}>
@@ -330,7 +313,30 @@ function AstronautAvatar({ progressPercent, route }) {
   );
 }
 
-export function Mars3DView({ activeLayers, activeRoute, onSelectTarget, onTerrainClick, customTarget, simulationProgress = 0, dustStorm = false, showLabels = true }) {
+export function Mars3DView({
+  activeLayers,
+  activeRoute,
+  onSelectTarget,
+  onTerrainClick,
+  customTarget,
+  simulationProgress = 0,
+  dustStorm = false,
+  showLabels = true,
+  isFirstPerson = false
+}) {
+  // Compute current astronaut coordinates
+  const astronautCurrentPos = useMemo(() => {
+    const totalWps = activeRoute.waypoints.length;
+    const index = Math.min(
+      Math.floor((simulationProgress / 100) * (totalWps - 1)),
+      totalWps - 1
+    );
+    const wp = activeRoute.waypoints[index];
+    const x = (wp[1] - 77.4508) * 800;
+    const z = -(wp[0] - 18.4447) * 800;
+    return [x, 2.0, z];
+  }, [simulationProgress, activeRoute]);
+
   return (
     <div className="w-full h-full relative bg-[#010206]">
       <Canvas
@@ -349,7 +355,15 @@ export function Mars3DView({ activeLayers, activeRoute, onSelectTarget, onTerrai
         />
         <directionalLight position={[-45, -20, -45]} intensity={0.5} color="#c24810" />
 
-        {/* Photorealistic Mars Terrain with No Rainbow Glare */}
+        {/* Camera Rig (Handles Orbit vs Visor Mode) */}
+        <CameraRig
+          isFirstPerson={isFirstPerson}
+          astronautPos={astronautCurrentPos}
+          route={activeRoute}
+          progressPercent={simulationProgress}
+        />
+
+        {/* Photoreal Terrain */}
         <PhotorealMartianTerrain
           activeLayers={activeLayers}
           onTerrainClick={onTerrainClick}
@@ -384,21 +398,73 @@ export function Mars3DView({ activeLayers, activeRoute, onSelectTarget, onTerrai
         })}
 
         {/* Astronaut Avatar */}
-        <AstronautAvatar progressPercent={simulationProgress} route={activeRoute} />
+        <AstronautAvatar
+          progressPercent={simulationProgress}
+          route={activeRoute}
+          isFirstPerson={isFirstPerson}
+        />
 
         {/* 3D Route Line */}
         <Route3DLine route={activeRoute} />
 
-        <OrbitControls
-          enableDamping
-          dampingFactor={0.06}
-          maxPolarAngle={Math.PI / 2.02}
-          minDistance={10}
-          maxDistance={140}
-        />
+        {/* OrbitControls disabled during First-Person mode to keep camera locked in helmet */}
+        {!isFirstPerson && (
+          <OrbitControls
+            enableDamping
+            dampingFactor={0.06}
+            maxPolarAngle={Math.PI / 2.02}
+            minDistance={10}
+            maxDistance={140}
+          />
+        )}
       </Canvas>
 
-      {/* Line-of-Sight Comms Shadow HUD Warning */}
+      {/* ======================================================= */}
+      {/* 🥽 FIRST-PERSON ASTRONAUT HELMET VISOR HUD OVERLAY     */}
+      {/* ======================================================= */}
+      {isFirstPerson && (
+        <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6">
+          {/* Curved Visor Vignette / Glass Reflection */}
+          <div
+            className="absolute inset-0 pointer-events-none"
+            style={{
+              boxShadow: 'inset 0 0 100px rgba(0, 240, 255, 0.25), inset 0 0 40px rgba(0, 0, 0, 0.85)',
+              background: 'radial-gradient(ellipse at center, transparent 65%, rgba(0, 240, 255, 0.08) 100%)'
+            }}
+          />
+
+          {/* Top Visor Telemetry Ribbon */}
+          <div className="relative flex items-center justify-between font-mono text-xs">
+            <div className="bg-slate-950/80 backdrop-blur border border-cyan-500/40 px-3 py-1.5 rounded-lg text-cyan-300 flex items-center gap-2">
+              <Compass className="w-4 h-4 text-cyan-400 animate-spin" style={{ animationDuration: '10s' }} />
+              <span>VISOR HEADING: 284° WNW // TILT: 0.0°</span>
+            </div>
+            <div className="bg-slate-950/80 backdrop-blur border border-cyan-500/40 px-3 py-1.5 rounded-lg text-emerald-400 font-bold">
+              SUIT LIFE SUPPORT: 100% NOMINAL
+            </div>
+          </div>
+
+          {/* Center Targeting Reticle */}
+          <div className="relative flex items-center justify-center">
+            <div className="w-16 h-16 rounded-full border border-cyan-400/40 flex items-center justify-center">
+              <div className="w-1 h-1 bg-cyan-400 rounded-full" />
+              <div className="absolute top-0 w-2 h-0.5 bg-cyan-400" />
+              <div className="absolute bottom-0 w-2 h-0.5 bg-cyan-400" />
+              <div className="absolute left-0 w-0.5 h-2 bg-cyan-400" />
+              <div className="absolute right-0 w-0.5 h-2 bg-cyan-400" />
+            </div>
+          </div>
+
+          {/* Bottom Footstep Telemetry */}
+          <div className="relative flex justify-center">
+            <div className="bg-slate-950/80 backdrop-blur border border-cyan-500/40 px-4 py-1.5 rounded-xl text-xs font-mono text-cyan-300">
+              GROUND CLEARANCE: 1.8M // TERRAIN FRICTION COEFF: 0.68
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Line-of-Sight Comms Shadow Warning */}
       {activeRoute.hasCommsShadow && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-20 bg-rose-950/90 border border-rose-500/80 px-4 py-2 rounded-xl text-rose-300 font-mono text-xs flex items-center gap-2.5 shadow-[0_0_25px_rgba(244,63,94,0.6)] animate-pulse backdrop-blur-md">
           <AlertTriangle className="w-4 h-4 text-rose-400" />
