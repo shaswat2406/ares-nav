@@ -1,5 +1,8 @@
 @import "tailwindcss";
 @import "leaflet/dist/leaflet.css";
+@import "@fontsource/rajdhani/500.css";
+@import "@fontsource/rajdhani/600.css";
+@import "@fontsource/rajdhani/700.css";
 @import "@fontsource/orbitron/700.css";
 @import "@fontsource/orbitron/900.css";
 @import "@fontsource/jetbrains-mono/400.css";
@@ -11,48 +14,62 @@
   --color-hud-amber: #ff9900;
   --color-hud-red: #ff3344;
   --color-hud-green: #00ff88;
-  --color-hud-dark: #030712;
-  --color-hud-panel: rgba(6, 11, 25, 0.92);
+  --color-hud-purple: #c084fc;
 }
 
 body {
-  background-color: #02040a;
-  color: #e2e8f0;
-  font-family: 'JetBrains Mono', monospace;
-  overflow-x: hidden;
-  background-image: 
-    radial-gradient(circle at 50% 0%, rgba(200, 75, 20, 0.12), transparent 45%),
-    linear-gradient(rgba(0, 240, 255, 0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 240, 255, 0.02) 1px, transparent 1px);
-  background-size: 100% 100%, 30px 30px, 30px 30px;
+  background-color: #010307;
+  color: #f1f5f9;
+  font-family: 'Rajdhani', sans-serif;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  width: 100vw;
+  height: 100vh;
 }
 
 .font-heading {
   font-family: 'Orbitron', sans-serif;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
 }
 
-/* Authentic Aerospace Mil-Spec Tactical Frame & Cut Corners */
-.hud-panel {
-  background: var(--color-hud-panel);
-  border: 1px solid rgba(0, 240, 255, 0.22);
+.font-mono-num {
+  font-family: 'JetBrains Mono', monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Next-Gen SpaceX/Dragon Glassmorphic HUD Panels */
+.hud-glass {
+  background: rgba(6, 11, 24, 0.72);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(56, 189, 248, 0.22);
   box-shadow: 
-    inset 0 0 20px rgba(0, 240, 255, 0.04),
-    0 10px 30px rgba(0, 0, 0, 0.7);
+    inset 0 0 15px rgba(0, 240, 255, 0.05),
+    0 8px 32px 0 rgba(0, 0, 0, 0.65);
   position: relative;
-  backdrop-filter: blur(16px);
 }
 
-/* Corner Reticle Accents (Camera viewfinder / Mil-Spec HUD look) */
+.hud-glass-amber {
+  background: rgba(28, 14, 5, 0.82);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  box-shadow: 
+    inset 0 0 20px rgba(245, 158, 11, 0.12),
+    0 8px 32px 0 rgba(0, 0, 0, 0.7);
+}
+
+/* Corner Reticle Brackets */
 .hud-corner-tl::before {
   content: '';
   position: absolute;
   top: -1px;
   left: -1px;
-  width: 10px;
-  height: 10px;
-  border-top: 2px solid #00f0ff;
-  border-left: 2px solid #00f0ff;
+  width: 8px;
+  height: 8px;
+  border-top: 2px solid #38bdf8;
+  border-left: 2px solid #38bdf8;
   pointer-events: none;
 }
 
@@ -61,35 +78,48 @@ body {
   position: absolute;
   bottom: -1px;
   right: -1px;
-  width: 10px;
-  height: 10px;
-  border-bottom: 2px solid #00f0ff;
-  border-right: 2px solid #00f0ff;
+  width: 8px;
+  height: 8px;
+  border-bottom: 2px solid #38bdf8;
+  border-right: 2px solid #38bdf8;
   pointer-events: none;
 }
 
-/* Subtle CRT scanline effect on tactical monitors */
-.crt-overlay {
-  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
-  background-size: 100% 4px;
-  pointer-events: none;
+/* Glow effects */
+.glow-cyan {
+  text-shadow: 0 0 10px rgba(0, 240, 255, 0.7);
 }
 
-/* Tactical HUD Glows */
-.hud-glow-cyan {
-  text-shadow: 0 0 8px rgba(0, 240, 255, 0.7);
+.glow-red {
+  text-shadow: 0 0 10px rgba(255, 51, 68, 0.8);
 }
 
-.hud-glow-amber {
-  text-shadow: 0 0 8px rgba(255, 153, 0, 0.7);
+.glow-green {
+  text-shadow: 0 0 10px rgba(0, 255, 136, 0.7);
 }
 
-.hud-glow-green {
-  text-shadow: 0 0 8px rgba(0, 255, 136, 0.7);
+.glow-amber {
+  text-shadow: 0 0 10px rgba(255, 153, 0, 0.7);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(4, 8, 20, 0.4);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.3);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.6);
 }
 
 .leaflet-container {
   width: 100%;
   height: 100%;
-  background: #02040a !important;
+  background: #010307 !important;
 }

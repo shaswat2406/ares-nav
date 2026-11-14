@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Play, Pause, RotateCcw, Heart, Battery, Radio, Compass, ShieldAlert } from 'lucide-react';
 import { sfx } from '../utils/soundFX';
 import confetti from 'canvas-confetti';
 
-export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
+export const EVASimulator = ({ activeRoute, onProgressUpdate, dustStorm }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
   const [heartRate, setHeartRate] = useState(88);
   const [battery, setBattery] = useState(99.4);
-  const [suitPressurePsi, setSuitPressurePsi] = useState(4.3); // Nominal spacesuit PSI (e.g. Apollo/EMU is ~4.3 psi pure O2)
+  const [suitPressurePsi, setSuitPressurePsi] = useState(4.3);
+
+  // Faster battery/O2 drain during dust storm
+  const drainRate = dustStorm ? 0.28 : 0.08;
 
   useEffect(() => {
     let timer;
@@ -30,8 +33,8 @@ export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
           if (onProgressUpdate) onProgressUpdate(next);
 
           const isSteep = activeRoute.safetyScore < 80 && next > 35 && next < 70;
-          setHeartRate(isSteep ? Math.floor(142 + Math.random() * 16) : Math.floor(86 + Math.random() * 8));
-          setBattery(b => Math.max(12, b - 0.09));
+          setHeartRate(isSteep ? Math.floor(145 + Math.random() * 15) : Math.floor(86 + Math.random() * 8));
+          setBattery(b => Math.max(8, b - drainRate));
 
           if (isSteep && next % 8 === 0) {
             sfx.hazardAlarm();
@@ -39,10 +42,10 @@ export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
 
           return next;
         });
-      }, 180);
+      }, 160);
     }
     return () => clearInterval(timer);
-  }, [isPlaying, activeRoute, onProgressUpdate]);
+  }, [isPlaying, activeRoute, onProgressUpdate, drainRate]);
 
   const togglePlay = () => {
     sfx.click();
@@ -62,9 +65,9 @@ export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
   const isDanger = activeRoute.safetyScore < 80;
 
   return (
-    <div className="hud-panel hud-corner-tl hud-corner-br rounded-xl p-3.5 space-y-3 border-cyan-500/30">
+    <div className="hud-glass hud-corner-tl hud-corner-br rounded-2xl p-4 space-y-3.5 border-cyan-500/30">
       {/* Simulation Header */}
-      <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+      <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2.5">
         <div className="flex items-center space-x-2">
           <span className="relative flex h-2.5 w-2.5">
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
@@ -77,7 +80,7 @@ export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
         <div className="flex items-center space-x-2">
           <button
             onClick={togglePlay}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
               isPlaying
                 ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30'
                 : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/30'
@@ -88,7 +91,7 @@ export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
           </button>
           <button
             onClick={handleReset}
-            className="p-1 rounded-md bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="p-1 rounded-lg bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-white transition-colors cursor-pointer"
             title="Reset Simulation"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -98,8 +101,8 @@ export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
 
       {/* Traversal Distance Progress Bar */}
       <div className="space-y-1">
-        <div className="flex justify-between text-[11px] font-mono">
-          <span className="text-slate-400">WAYPOINT DISPLACEMENT:</span>
+        <div className="flex justify-between text-[11px] font-mono-num">
+          <span className="text-slate-400 font-sans">DISPLACEMENT:</span>
           <span className="text-cyan-300 font-bold">{currentKm} / {activeRoute.distanceKm} KM ({progress}%)</span>
         </div>
         <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
@@ -115,39 +118,39 @@ export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
       </div>
 
       {/* Real-time Astronaut Biometric HUD Sensors */}
-      <div className="grid grid-cols-4 gap-2 text-center font-mono">
-        <div className="bg-slate-950/90 p-2 rounded-lg border border-slate-800">
-          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1">
+      <div className="grid grid-cols-4 gap-2 text-center font-mono-num">
+        <div className="bg-slate-950/90 p-2.5 rounded-xl border border-slate-800">
+          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1 font-sans">
             <Heart className="w-2.5 h-2.5 text-rose-400 animate-pulse" /> METABOLIC
           </div>
-          <div className={`text-xs font-bold mt-1 ${heartRate > 120 ? 'text-rose-400 animate-pulse hud-glow-amber' : 'text-slate-100'}`}>
+          <div className={`text-sm font-bold mt-1 ${heartRate > 120 ? 'text-rose-400 animate-pulse glow-amber' : 'text-slate-100'}`}>
             {heartRate} <span className="text-[9px] text-slate-500">BPM</span>
           </div>
         </div>
 
-        <div className="bg-slate-950/90 p-2 rounded-lg border border-slate-800">
-          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1">
+        <div className="bg-slate-950/90 p-2.5 rounded-xl border border-slate-800">
+          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1 font-sans">
             <Battery className="w-2.5 h-2.5 text-emerald-400" /> EMU POWER
           </div>
-          <div className="text-xs font-bold text-emerald-300 mt-1">
+          <div className={`text-sm font-bold mt-1 ${battery < 25 ? 'text-rose-400 animate-pulse' : 'text-emerald-300'}`}>
             {battery.toFixed(1)}%
           </div>
         </div>
 
-        <div className="bg-slate-950/90 p-2 rounded-lg border border-slate-800">
-          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1">
+        <div className="bg-slate-950/90 p-2.5 rounded-xl border border-slate-800">
+          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1 font-sans">
             <Compass className="w-2.5 h-2.5 text-cyan-400" /> SUIT O₂
           </div>
-          <div className="text-xs font-bold text-cyan-300 mt-1">
+          <div className="text-sm font-bold text-cyan-300 mt-1">
             {suitPressurePsi} <span className="text-[9px] text-slate-500">PSI</span>
           </div>
         </div>
 
-        <div className="bg-slate-950/90 p-2 rounded-lg border border-slate-800">
-          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1">
+        <div className="bg-slate-950/90 p-2.5 rounded-xl border border-slate-800">
+          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1 font-sans">
             <Radio className="w-2.5 h-2.5 text-amber-400" /> CREW
           </div>
-          <div className="text-xs font-bold text-amber-300 mt-1 truncate">
+          <div className="text-sm font-bold text-amber-300 mt-1 truncate">
             SHASWAT
           </div>
         </div>
