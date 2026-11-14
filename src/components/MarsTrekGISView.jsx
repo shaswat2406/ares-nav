@@ -423,7 +423,7 @@ export function MarsTrekGISView() {
       {hudVisible && (
         <>
           {/* Top Left: Sleek Branding & Dropdown Quick Navigation */}
-          <div className="absolute top-4 left-4 z-[400] space-y-2 pointer-events-auto max-w-[calc(100vw-6rem)]">
+          <div className="absolute top-20 left-4 z-[400] space-y-2 pointer-events-auto max-w-[calc(100vw-6rem)]">
             <div className="flex items-center gap-1.5 flex-wrap">
               <div className="bg-[#040816]/90 backdrop-blur-xl border border-cyan-500/40 px-3 py-1.5 rounded-xl text-xs font-mono text-cyan-300 flex items-center gap-2 shadow-2xl">
                 <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
@@ -489,7 +489,7 @@ export function MarsTrekGISView() {
           </div>
 
           {/* Top Right: Layer Switcher, Compass & Zoom Controls */}
-          <div className="absolute top-4 right-4 z-[400] space-y-2 pointer-events-auto flex flex-col items-end">
+          <div className="absolute top-20 right-4 z-[400] space-y-2 pointer-events-auto flex flex-col items-end">
             <div className="flex items-center gap-1.5">
               {/* Layers Popover Button */}
               <div className="relative">
@@ -746,7 +746,7 @@ export function MarsTrekGISView() {
             sfx.click();
             setHudVisible(true);
           }}
-          className="absolute top-4 right-4 z-[400] bg-[#040816]/90 border border-cyan-500/50 hover:border-cyan-300 px-3 py-1.5 rounded-xl text-xs font-mono text-cyan-300 shadow-2xl flex items-center gap-1.5 cursor-pointer pointer-events-auto"
+          className="absolute top-20 right-4 z-[400] bg-[#040816]/90 border border-cyan-500/50 hover:border-cyan-300 px-3 py-1.5 rounded-xl text-xs font-mono text-cyan-300 shadow-2xl flex items-center gap-1.5 cursor-pointer pointer-events-auto"
         >
           <Eye className="w-3.5 h-3.5" />
           <span>SHOW HUD</span>
