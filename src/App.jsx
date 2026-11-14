@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mars3DView } from './components/Mars3DView';
 import { MarsTrekGISView } from './components/MarsTrekGISView';
 import { GoogleMarsEarthView } from './components/GoogleMarsEarthView';
@@ -9,10 +9,37 @@ import { ElevationDrawer } from './components/ElevationDrawer';
 import { DataSpecsModal } from './components/DataSpecsModal';
 import { MissionExportModal } from './components/MissionExportModal';
 import { AstrobiologyLabModal } from './components/AstrobiologyLabModal';
+import { EVAMissionConfig } from './components/EVAMissionConfig';
+import { EVALifeSupportCalc } from './components/EVALifeSupportCalc';
+import { RouteComparison } from './components/RouteComparison';
+import { MissionSimulator } from './components/MissionSimulator';
+import { ScienceTargetPanel } from './components/ScienceTargetPanel';
+import { DataExplorer } from './components/DataExplorer';
 import { PRECOMPUTED_ROUTES, SCIENCE_TARGETS } from './data/jezeroData';
 import { computeCustomAStarRoute } from './utils/astarEngine';
+import { compareAllRoutes } from './utils/pathfindingEngine';
 import { sfx } from './utils/soundFX';
-import { Rocket, ShieldAlert, Navigation, Layers, Box, Globe, Microscope, FileDown, Database, Eye, EyeOff, Radio, Target, User } from 'lucide-react';
+import {
+  Rocket,
+  ShieldAlert,
+  Navigation,
+  Layers,
+  Box,
+  Globe,
+  Microscope,
+  FileDown,
+  Database,
+  Eye,
+  EyeOff,
+  Radio,
+  Target,
+  User,
+  Activity,
+  Play,
+  Sliders,
+  Sparkles,
+  BarChart3
+} from 'lucide-react';
 
 function App() {
   const [viewMode, setViewMode] = useState('surface3d');
@@ -24,13 +51,39 @@ function App() {
   const [simulationProgress, setSimulationProgress] = useState(0);
   const [dustStorm, setDustStorm] = useState(false);
   const [showLabels, setShowLabels] = useState(true);
-  const [isFirstPerson, setIsFirstPerson] = useState(false); // Visor POV Camera!
+  const [isFirstPerson, setIsFirstPerson] = useState(false); // Visor POV Camera
 
-  // Modals
+  // EVA Mission Config State
+  const [evaConfig, setEvaConfig] = useState({
+    crewSize: 2,
+    walkSpeedKmh: 3.0,
+    o2CapacityL: 862,
+    o2ConsumptionLmin: 0.84,
+    batteryCapacityWh: 45000,
+    batteryDrainWh: 85,
+    missionDurationMin: 480,
+    safetyReservePercent: 25,
+    maxSlopeDeg: 15,
+    thermalLimitC: -60,
+    radiationLimitMsv: 1.0,
+    returnToBase: true
+  });
+  const [evaElapsedSeconds, setEvaElapsedSeconds] = useState(0);
+  const [evaRunning, setEvaRunning] = useState(false);
+
+  // Pathfinding Benchmark State
+  const [comparedRoutes, setComparedRoutes] = useState(null);
+  const [isRouteCompareOpen, setIsRouteCompareOpen] = useState(false);
+
+  // Modals State
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isLabOpen, setIsLabOpen] = useState(false);
   const [isSpecsOpen, setIsSpecsOpen] = useState(false);
+  const [isMissionSimOpen, setIsMissionSimOpen] = useState(false);
+  const [isSciencePanelOpen, setIsSciencePanelOpen] = useState(false);
+  const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
 
+  // 3D Terrain Overlays
   const [activeLayers, setActiveLayers] = useState({
     topography: true,
     mineralogy: true,
@@ -38,9 +91,26 @@ function App() {
     targets: true
   });
 
-  const activeRoute = dustStorm && routeType === 'direct' 
-    ? PRECOMPUTED_ROUTES.emergency 
-    : (routeType === 'custom' && customRoute ? customRoute : PRECOMPUTED_ROUTES[routeType]);
+  const activeRoute =
+    dustStorm && routeType === 'direct'
+      ? PRECOMPUTED_ROUTES.emergency
+      : routeType === 'custom' && customRoute
+      ? customRoute
+      : PRECOMPUTED_ROUTES[routeType];
+
+  // Live Timer for EVA Simulation
+  useEffect(() => {
+    let interval = null;
+    if (simulationProgress > 0 && simulationProgress < 100) {
+      setEvaRunning(true);
+      interval = setInterval(() => {
+        setEvaElapsedSeconds((sec) => sec + 1);
+      }, 1000);
+    } else {
+      setEvaRunning(false);
+    }
+    return () => clearInterval(interval);
+  }, [simulationProgress]);
 
   const handleRouteSwitch = (type) => {
     sfx.click();
@@ -52,7 +122,7 @@ function App() {
 
   const handleTerrainClick = (targetX, targetZ) => {
     setCustomTarget({ x: targetX, z: targetZ });
-    const computed = computeCustomAStarRoute(0, 0, targetX, targetZ, 15.0);
+    const computed = computeCustomAStarRoute(0, 0, targetX, targetZ, evaConfig.maxSlopeDeg);
     setCustomRoute(computed);
     setRouteType('custom');
     setSimulationProgress(0);
@@ -62,6 +132,15 @@ function App() {
   const toggleFirstPerson = () => {
     sfx.click();
     setIsFirstPerson(!isFirstPerson);
+  };
+
+  const handleOpenBenchmark = () => {
+    sfx.click();
+    const targetX = customTarget?.x ?? 12.0;
+    const targetZ = customTarget?.z ?? -14.0;
+    const results = compareAllRoutes(0, 0, targetX, targetZ);
+    setComparedRoutes(results);
+    setIsRouteCompareOpen(true);
   };
 
   return (
@@ -98,16 +177,16 @@ function App() {
       {/* ============================================================== */}
       {/* 2. FLOATING AEROSPACE COMMAND HEADER (TOP)                      */}
       {/* ============================================================== */}
-      <header className="absolute top-4 left-4 right-4 z-20 flex flex-col md:flex-row items-center justify-between gap-3 pointer-events-none">
+      <header className="absolute top-3 left-4 right-4 z-20 flex flex-col md:flex-row items-center justify-between gap-2 pointer-events-none">
         {/* Top-Left Branding */}
-        <div className="hud-glass hud-corner-tl hud-corner-br rounded-2xl px-4 py-2.5 flex items-center space-x-3 pointer-events-auto border-cyan-500/30">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500 via-sky-600 to-blue-700 flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.4)] border border-cyan-300/40">
-            <Rocket className="w-5 h-5 text-slate-950 transform -rotate-45" />
+        <div className="hud-glass hud-corner-tl hud-corner-br rounded-2xl px-4 py-2 flex items-center space-x-3 pointer-events-auto border-cyan-500/30">
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 via-sky-600 to-blue-700 flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.4)] border border-cyan-300/40">
+            <Rocket className="w-4 h-4 text-slate-950 transform -rotate-45" />
           </div>
           <div>
             <div className="flex items-center gap-2">
               <h1 className="font-heading font-extrabold text-sm md:text-base tracking-widest text-slate-100 uppercase">
-                ARES-NAV <span className="text-cyan-400 text-[10px] font-mono-num px-1.5 py-0.5 rounded border border-cyan-500/50 bg-cyan-950/40 font-bold">TACTICAL HUD // v3.8</span>
+                ARES-NAV <span className="text-cyan-400 text-[10px] font-mono-num px-1.5 py-0.5 rounded border border-cyan-500/50 bg-cyan-950/40 font-bold">TACTICAL HUD // v4.0</span>
               </h1>
               <span className="text-[10px] bg-slate-950/90 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
@@ -115,13 +194,13 @@ function App() {
               </span>
             </div>
             <p className="text-[10px] font-mono text-slate-400">
-              NASA SPACE APPS CHALLENGE // INTERPLANETARY SURVIVAL: MARTIAN MAP
+              NASA SPACE APPS CHALLENGE 2026 // INTERPLANETARY SURVIVAL GUIDE: MARTIAN MAP
             </p>
           </div>
         </div>
 
-        {/* Top-Right Tools */}
-        <div className="flex flex-wrap items-center gap-2 pointer-events-auto">
+        {/* Top-Right Mission Tools & Navigation */}
+        <div className="flex flex-wrap items-center gap-1.5 pointer-events-auto">
           {/* 🥽 FIRST-PERSON VISOR POV TOGGLE BUTTON */}
           <button
             onClick={toggleFirstPerson}
@@ -142,7 +221,7 @@ function App() {
                 sfx.click();
                 setViewMode('surface3d');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 viewMode === 'surface3d'
                   ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-[0_0_15px_rgba(249,115,22,0.5)]'
                   : 'text-slate-400 hover:text-white'
@@ -156,7 +235,7 @@ function App() {
                 sfx.click();
                 setViewMode('gis');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 viewMode === 'gis'
                   ? 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(0,240,255,0.4)]'
                   : 'text-slate-400 hover:text-white'
@@ -170,7 +249,7 @@ function App() {
                 sfx.click();
                 setViewMode('globe');
               }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+              className={`px-2.5 py-1.5 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
                 viewMode === 'globe'
                   ? 'bg-purple-600 text-white shadow-[0_0_15px_rgba(168,85,247,0.4)]'
                   : 'text-slate-400 hover:text-white'
@@ -181,6 +260,51 @@ function App() {
             </button>
           </div>
 
+          {/* 🚀 Mission Simulation Demo (Judges Special) */}
+          <button
+            onClick={() => {
+              sfx.click();
+              setIsMissionSimOpen(true);
+            }}
+            className="hud-glass px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-amber-300 hover:text-amber-100 border-amber-500/40 flex items-center gap-1.5 cursor-pointer shadow-lg hover:border-amber-400"
+          >
+            <Play className="w-3.5 h-3.5 text-amber-400" />
+            SIMULATE EVA
+          </button>
+
+          {/* ⚡ Pathfinding Benchmark 5 Algorithms */}
+          <button
+            onClick={handleOpenBenchmark}
+            className="hud-glass px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-emerald-300 hover:text-emerald-100 border-emerald-500/40 flex items-center gap-1.5 cursor-pointer shadow-lg hover:border-emerald-400"
+          >
+            <BarChart3 className="w-3.5 h-3.5 text-emerald-400" />
+            BENCHMARK
+          </button>
+
+          {/* 🔬 Science Target Explorer */}
+          <button
+            onClick={() => {
+              sfx.click();
+              setIsSciencePanelOpen(true);
+            }}
+            className="hud-glass px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-purple-300 hover:text-purple-100 border-purple-500/40 flex items-center gap-1.5 cursor-pointer shadow-lg hover:border-purple-400"
+          >
+            <Microscope className="w-3.5 h-3.5 text-purple-400" />
+            SCIENCE
+          </button>
+
+          {/* 📊 NASA Data Explorer */}
+          <button
+            onClick={() => {
+              sfx.click();
+              setIsDataExplorerOpen(true);
+            }}
+            className="hud-glass px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-cyan-300 hover:text-white border-cyan-500/40 flex items-center gap-1.5 cursor-pointer shadow-lg hover:border-cyan-400"
+          >
+            <Database className="w-3.5 h-3.5 text-cyan-400" />
+            DATASETS
+          </button>
+
           {/* Labels Toggle */}
           <button
             onClick={() => {
@@ -190,7 +314,7 @@ function App() {
             className="hud-glass px-2.5 py-1.5 rounded-xl text-xs font-mono text-slate-300 hover:text-cyan-300 border-cyan-500/30 flex items-center gap-1 cursor-pointer"
           >
             {showLabels ? <Eye className="w-3.5 h-3.5 text-cyan-400" /> : <EyeOff className="w-3.5 h-3.5 text-slate-500" />}
-            <span>LABELS: {showLabels ? 'ON' : 'OFF'}</span>
+            <span>{showLabels ? 'LABELS ON' : 'LABELS OFF'}</span>
           </button>
 
           {/* Data Specs Modal */}
@@ -199,9 +323,8 @@ function App() {
               sfx.click();
               setIsSpecsOpen(true);
             }}
-            className="hud-glass px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-cyan-300 hover:text-white border-cyan-500/40 flex items-center gap-1.5 cursor-pointer shadow-lg hover:border-cyan-400"
+            className="hud-glass px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold text-slate-300 hover:text-white border-slate-700 flex items-center gap-1 cursor-pointer"
           >
-            <Database className="w-3.5 h-3.5 text-cyan-400" />
             SPECS
           </button>
 
@@ -211,9 +334,8 @@ function App() {
               sfx.click();
               setIsLabOpen(true);
             }}
-            className="hud-glass px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-purple-300 hover:text-purple-100 border-purple-500/40 flex items-center gap-1.5 cursor-pointer shadow-lg hover:border-purple-400"
+            className="hud-glass px-2.5 py-1.5 rounded-xl text-xs font-mono font-bold text-purple-300 hover:text-purple-100 border-purple-500/30 flex items-center gap-1 cursor-pointer"
           >
-            <Microscope className="w-3.5 h-3.5 text-purple-400" />
             LAB
           </button>
 
@@ -223,7 +345,7 @@ function App() {
               sfx.click();
               setIsExportOpen(true);
             }}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white transition-all cursor-pointer shadow-[0_0_20px_rgba(249,115,22,0.4)] border border-orange-400/50 flex items-center gap-1.5"
+            className="px-3 py-1.5 rounded-xl text-xs font-mono font-bold bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white transition-all cursor-pointer shadow-[0_0_20px_rgba(249,115,22,0.4)] border border-orange-400/50 flex items-center gap-1.5"
           >
             <FileDown className="w-3.5 h-3.5" />
             FLIGHT ORDER
@@ -232,9 +354,10 @@ function App() {
       </header>
 
       {/* ============================================================== */}
-      {/* 3. FLOATING LEFT PANEL: ALGORITHM ROUTE SELECTOR               */}
+      {/* 3. FLOATING LEFT PANEL: ALGORITHM SELECTOR & EVA CONFIG       */}
       {/* ============================================================== */}
-      <div className="absolute top-24 left-4 z-20 w-80 space-y-3 pointer-events-auto">
+      <div className="absolute top-20 left-4 z-20 w-80 space-y-2.5 pointer-events-auto max-h-[85vh] overflow-y-auto pr-1">
+        {/* Route Selector Card */}
         <div className="hud-glass hud-corner-tl hud-corner-br rounded-2xl p-3.5 border-cyan-500/30 space-y-2.5">
           <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1.5">
             <span className="font-heading font-bold text-xs text-cyan-300 uppercase tracking-wider">
@@ -291,13 +414,18 @@ function App() {
                   <div className="text-xs font-bold flex items-center gap-1.5">
                     <Target className="w-3.5 h-3.5 text-amber-400" /> Custom Clicked Path
                   </div>
-                  <div className="text-[10px] text-slate-400 mt-0.5">{customRoute.distanceKm} km // {customRoute.maxSlopeDeg}°</div>
+                  <div className="text-[10px] text-slate-400 mt-0.5">
+                    {customRoute.distanceKm} km // {customRoute.maxSlopeDeg}°
+                  </div>
                 </div>
                 <span className="text-xs font-bold text-amber-400">{customRoute.safetyScore}%</span>
               </button>
             )}
           </div>
         </div>
+
+        {/* EVA Mission Parameters Config (Collapsible) */}
+        <EVAMissionConfig config={evaConfig} onChange={setEvaConfig} />
 
         {/* Selected Science Target Info Card */}
         {selectedTarget && (
@@ -330,15 +458,26 @@ function App() {
       </div>
 
       {/* ============================================================== */}
-      {/* 4. FLOATING RIGHT PANEL: TELEMETRY HUD & LIFE SUPPORT           */}
+      {/* 4. FLOATING RIGHT PANEL: TELEMETRY & LIVE LIFE SUPPORT CALC    */}
       {/* ============================================================== */}
-      <div className="absolute top-24 right-4 z-20 w-96 space-y-3 pointer-events-auto max-h-[85vh] overflow-y-auto pr-1">
+      <div className="absolute top-20 right-4 z-20 w-96 space-y-2.5 pointer-events-auto max-h-[85vh] overflow-y-auto pr-1">
+        {/* Core Walk Simulator */}
         <EVASimulator
           activeRoute={activeRoute}
           onProgressUpdate={(prog) => setSimulationProgress(prog)}
           dustStorm={dustStorm}
         />
 
+        {/* Live Mathematical Life Support Calculations */}
+        <EVALifeSupportCalc
+          config={evaConfig}
+          activeRoute={activeRoute}
+          dustStorm={dustStorm}
+          elapsedSeconds={evaElapsedSeconds}
+          running={evaRunning}
+        />
+
+        {/* Environmental Telemetry & Dynamic Shader Toggles */}
         <EVAStatusHUD
           activeRoute={activeRoute}
           selectedTarget={selectedTarget}
@@ -350,17 +489,32 @@ function App() {
       </div>
 
       {/* ============================================================== */}
-      {/* 5. COLLAPSIBLE BOTTOM DRAWER: ELEVATION & SLOPE PROFILE       */}
+      {/* 5. FLOATING BENCHMARK COMPARISON MODAL                          */}
+      {/* ============================================================== */}
+      {isRouteCompareOpen && comparedRoutes && (
+        <div className="absolute bottom-20 left-4 z-30 w-[480px]">
+          <RouteComparison
+            routes={comparedRoutes}
+            activeAlgorithm={routeType}
+            onSelectAlgorithm={(route) => {
+              setCustomRoute(route);
+              setRouteType('custom');
+              setIsRouteCompareOpen(false);
+            }}
+            onClose={() => setIsRouteCompareOpen(false)}
+          />
+        </div>
+      )}
+
+      {/* ============================================================== */}
+      {/* 6. COLLAPSIBLE BOTTOM DRAWER: ELEVATION & SLOPE PROFILE       */}
       {/* ============================================================== */}
       <ElevationDrawer activeRoute={activeRoute} />
 
       {/* ============================================================== */}
-      {/* 6. MODALS                                                      */}
+      {/* 7. MODALS                                                      */}
       {/* ============================================================== */}
-      <DataSpecsModal
-        isOpen={isSpecsOpen}
-        onClose={() => setIsSpecsOpen(false)}
-      />
+      <DataSpecsModal isOpen={isSpecsOpen} onClose={() => setIsSpecsOpen(false)} />
 
       <AstrobiologyLabModal
         isOpen={isLabOpen}
@@ -373,6 +527,30 @@ function App() {
         onClose={() => setIsExportOpen(false)}
         activeRoute={activeRoute}
         selectedTarget={selectedTarget}
+      />
+
+      <MissionSimulator
+        isOpen={isMissionSimOpen}
+        onClose={() => setIsMissionSimOpen(false)}
+        onSimComplete={() => {
+          sfx.scienceSuccess();
+          setIsMissionSimOpen(false);
+        }}
+      />
+
+      <ScienceTargetPanel
+        isOpen={isSciencePanelOpen}
+        onClose={() => setIsSciencePanelOpen(false)}
+        onSelectTarget={(t) => {
+          setSelectedTarget(t);
+          setIsSciencePanelOpen(false);
+        }}
+        currentTarget={selectedTarget}
+      />
+
+      <DataExplorer
+        isOpen={isDataExplorerOpen}
+        onClose={() => setIsDataExplorerOpen(false)}
       />
     </div>
   );

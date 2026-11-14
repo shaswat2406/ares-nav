@@ -186,3 +186,106 @@ export const SOL_TELEMETRY = {
   windSpeedMs: 5.4,
   windDirection: "ENE"
 };
+
+// Quick navigation locations for the GIS map jump panel
+export const QUICK_NAV_LOCATIONS = [
+  { name: "Jezero Center",   lat: 18.4550, lng: 77.4300, zoom: 12 },
+  { name: "Landing Site",    lat: 18.4447, lng: 77.4508, zoom: 14 },
+  { name: "Western Delta",   lat: 18.4550, lng: 77.4120, zoom: 13 },
+  { name: "Kodiak",          lat: 18.4230, lng: 77.4300, zoom: 14 },
+  { name: "Séítah",          lat: 18.4350, lng: 77.4420, zoom: 13 },
+  { name: "Crater Rim",      lat: 18.4800, lng: 77.4100, zoom: 12 },
+  { name: "Three Forks",     lat: 18.4550, lng: 77.4120, zoom: 14 },
+  { name: "Belva",           lat: 18.4680, lng: 77.3850, zoom: 14 }
+];
+
+// Perseverance rover traverse waypoints (actual traverse summary, Sol 1–1328)
+export const ROVER_TRAVERSE = [
+  [18.4447, 77.4508], // Sol 0 — Landing (Butler Site)
+  [18.4432, 77.4495], // Sol 14 — First drive
+  [18.4418, 77.4480], // Sol 30 — Artuby ridge approach
+  [18.4400, 77.4460], // Sol 60 — Crater floor south
+  [18.4375, 77.4440], // Sol 90 — Séítah boundary approach
+  [18.4350, 77.4420], // Sol 120 — Séítah outcrop (SCI-03)
+  [18.4330, 77.4400], // Sol 160 — South Séítah
+  [18.4300, 77.4380], // Sol 200 — Transition zone
+  [18.4280, 77.4350], // Sol 250 — Halfway to delta
+  [18.4260, 77.4320], // Sol 300 — Crater floor west
+  [18.4240, 77.4310], // Sol 350 — Kodiak approach
+  [18.4230, 77.4300], // Sol 380 — Kodiak Butte (SCI-01)
+  [18.4310, 77.4230], // Sol 420 — Delta toe
+  [18.4380, 77.4190], // Sol 480 — Delta scarp base
+  [18.4420, 77.4160], // Sol 520 — Delta front
+  [18.4480, 77.4130], // Sol 580 — Upper delta
+  [18.4550, 77.4120], // Sol 630 — Three Forks (SCI-02)
+  [18.4580, 77.4150], // Sol 680 — North delta
+  [18.4600, 77.4200], // Sol 740 — Margin fan
+  [18.4620, 77.4280], // Sol 800 — Boulder ejecta zone
+  [18.4650, 77.4300], // Sol 860 — North crater floor
+  [18.4680, 77.3900], // Sol 920 — Belva approach
+  [18.4680, 77.3850]  // Sol 980 — Belva Crater Rim (SCI-04)
+];
+
+// CRISM hyperspectral mineral detections in Jezero
+export const CRISM_DETECTIONS = [
+  {
+    id: "CRISM-01",
+    lat: 18.4230,
+    lng: 77.4280,
+    mineral: "Fe/Mg Smectite",
+    confidence: 94,
+    instrument: "CRISM VNIR",
+    citation: "Horgan et al. (2020), Icarus 339, 113526",
+    description: "Clay-bearing unit in delta topset beds, strong 1.9 μm absorption"
+  },
+  {
+    id: "CRISM-02",
+    lat: 18.4550,
+    lng: 77.4100,
+    mineral: "Mg Carbonate",
+    confidence: 88,
+    instrument: "CRISM VNIR",
+    citation: "Goudge et al. (2015), JGR Planets 120(5)",
+    description: "Carbonate outcrop at western delta front, 2.3 & 2.5 μm absorptions"
+  },
+  {
+    id: "CRISM-03",
+    lat: 18.4350,
+    lng: 77.4430,
+    mineral: "Olivine",
+    confidence: 91,
+    instrument: "CRISM VNIR",
+    citation: "Kremer et al. (2019), Science 364(6436)",
+    description: "Olivine-rich unit consistent with igneous cumulate in Séítah formation"
+  },
+  {
+    id: "CRISM-04",
+    lat: 18.4680,
+    lng: 77.3860,
+    mineral: "Opaline Silica",
+    confidence: 79,
+    instrument: "CRISM TIR",
+    citation: "Ruff & Christensen (2002), JGR Planets 107(E12)",
+    description: "Silica-rich deposit near Belva ejecta, possible hydrothermal origin"
+  },
+  {
+    id: "CRISM-05",
+    lat: 18.4480,
+    lng: 77.4200,
+    mineral: "Perchlorate",
+    confidence: 65,
+    instrument: "CRISM VNIR",
+    citation: "Ehlmann & Edwards (2014), Ann. Rev. Earth & Planet. Sci. 42",
+    description: "Weak perchlorate signature in delta apron, possible evaporitic deposit"
+  },
+  {
+    id: "CRISM-06",
+    lat: 18.4310,
+    lng: 77.4320,
+    mineral: "Phyllosilicate (Mixed)",
+    confidence: 83,
+    instrument: "CRISM VNIR",
+    citation: "Mustard et al. (2008), Nature 454, 305-309",
+    description: "Mixed-layer clays in transition zone between delta and crater floor"
+  }
+];
