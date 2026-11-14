@@ -1,9 +1,8 @@
 import React from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, Mountain } from 'lucide-react';
+import { TrendingUp, Mountain, Activity, ShieldCheck } from 'lucide-react';
 
 export const ElevationProfile = ({ activeRoute }) => {
-  // Use dynamically calculated profile if available, otherwise default sample
   const chartData = activeRoute.elevationProfile && activeRoute.elevationProfile.length > 0 
     ? activeRoute.elevationProfile 
     : [
@@ -15,43 +14,52 @@ export const ElevationProfile = ({ activeRoute }) => {
         { dist: `${activeRoute.distanceKm} km`, elev: -2570, slope: 3.2, note: 'Hab Return' }
       ];
 
+  const isSafe = activeRoute.safetyScore > 80;
+
   return (
-    <div className="bg-slate-900/90 backdrop-blur border border-slate-800 rounded-xl p-3 shadow-xl space-y-2">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-xs font-mono text-slate-300">
-          <Mountain className="w-3.5 h-3.5 text-orange-400" />
-          <span>MARSWALK ELEVATION CROSS-SECTION</span>
+    <div className="hud-panel hud-corner-tl hud-corner-br rounded-xl p-3.5 space-y-2 border-cyan-500/30">
+      {/* Tactical Header */}
+      <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2">
+        <div className="flex items-center gap-2">
+          <Activity className="w-4 h-4 text-cyan-400" />
+          <span className="font-heading text-xs font-bold tracking-widest text-cyan-300">
+            ELEVATION GRADIENT &amp; SLAPE ANGLE // PROFILE
+          </span>
         </div>
-        <div className="text-[11px] font-mono text-slate-400 flex items-center gap-1">
-          <TrendingUp className="w-3 h-3 text-cyan-400" />
-          <span>Max Incline: </span>
-          <span className={`font-bold ${activeRoute.maxSlopeDeg > 15 ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}`}>
-            {activeRoute.maxSlopeDeg}° {activeRoute.maxSlopeDeg > 15 ? '(HAZARD)' : '(SAFE)'}
+        <div className="flex items-center gap-3 text-[11px] font-mono">
+          <span className="text-slate-400">MAX INCLINE:</span>
+          <span className={`font-bold px-2 py-0.5 rounded ${
+            isSafe 
+              ? 'bg-emerald-950/80 text-emerald-400 border border-emerald-500/40 hud-glow-green' 
+              : 'bg-rose-950/80 text-rose-400 border border-rose-500/40 animate-pulse'
+          }`}>
+            {activeRoute.maxSlopeDeg}° {isSafe ? '✓ TRAVERSABLE' : '⚠️ CRITICAL TILT'}
           </span>
         </div>
       </div>
 
+      {/* Chart Canvas */}
       <div className="h-28 w-full">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+          <AreaChart data={chartData} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
             <defs>
               <linearGradient id="elevGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor={activeRoute.safetyScore > 80 ? "#10b981" : "#f43f5e"} stopOpacity={0.6}/>
-                <stop offset="95%" stopColor={activeRoute.safetyScore > 80 ? "#10b981" : "#f43f5e"} stopOpacity={0.0}/>
+                <stop offset="5%" stopColor={isSafe ? "#00ff88" : "#ff3344"} stopOpacity={0.5}/>
+                <stop offset="95%" stopColor={isSafe ? "#00ff88" : "#ff3344"} stopOpacity={0.0}/>
               </linearGradient>
             </defs>
-            <XAxis dataKey="dist" stroke="#64748b" fontSize={10} tickLine={false} />
-            <YAxis stroke="#64748b" fontSize={10} domain={['dataMin - 20', 'dataMax + 20']} tickLine={false} />
+            <XAxis dataKey="dist" stroke="#475569" fontSize={10} tickLine={false} />
+            <YAxis stroke="#475569" fontSize={10} domain={['dataMin - 15', 'dataMax + 15']} tickLine={false} />
             <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
                   const data = payload[0].payload;
                   return (
-                    <div className="bg-slate-950 border border-slate-700 p-2 rounded text-[11px] font-mono shadow-xl">
-                      <div className="text-orange-400 font-bold">{data.note} ({data.dist})</div>
-                      <div className="text-slate-200">Elevation: {data.elev}m</div>
-                      <div className={data.slope > 15 ? "text-rose-400 font-bold" : "text-emerald-400"}>
-                        Local Slope: {data.slope}° {data.slope > 15 ? '⚠️ HAZARDOUS' : '✓ SAFE'}
+                    <div className="bg-slate-950/95 border border-cyan-500/40 p-2.5 rounded-lg text-[11px] font-mono shadow-2xl backdrop-blur">
+                      <div className="text-cyan-400 font-bold tracking-wider">{data.note} ({data.dist})</div>
+                      <div className="text-slate-200 mt-0.5">Altitude: {data.elev}m MOLA Datum</div>
+                      <div className={data.slope > 15 ? "text-rose-400 font-bold mt-0.5" : "text-emerald-400 font-bold mt-0.5"}>
+                        Local Pitch: {data.slope}° {data.slope > 15 ? '⚠️ ROLLOVER HAZARD' : '✓ NOMINAL'}
                       </div>
                     </div>
                   );
@@ -62,13 +70,19 @@ export const ElevationProfile = ({ activeRoute }) => {
             <Area
               type="monotone"
               dataKey="elev"
-              stroke={activeRoute.safetyScore > 80 ? "#10b981" : "#f43f5e"}
+              stroke={isSafe ? "#00ff88" : "#ff3344"}
               strokeWidth={2}
               fillOpacity={1}
               fill="url(#elevGradient)"
             />
           </AreaChart>
         </ResponsiveContainer>
+      </div>
+
+      <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono pt-1 border-t border-slate-800/60">
+        <span>DATUM: MOLA AREOID 0-ELEVATION</span>
+        <span>SUIT TRACTION THRESHOLD: 15.0° LIMIT</span>
+        <span>RESOLUTION: 100M DEM SAMPLING</span>
       </div>
     </div>
   );

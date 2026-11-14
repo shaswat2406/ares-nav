@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Play, Pause, RotateCcw, User, Heart, Battery, Radio } from 'lucide-react';
+import { Play, Pause, RotateCcw, Heart, Battery, Radio, Compass, ShieldAlert } from 'lucide-react';
 import { sfx } from '../utils/soundFX';
 import confetti from 'canvas-confetti';
 
 export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [progress, setProgress] = useState(0); // 0 to 100%
-  const [heartRate, setHeartRate] = useState(94);
-  const [battery, setBattery] = useState(98);
+  const [progress, setProgress] = useState(0);
+  const [heartRate, setHeartRate] = useState(88);
+  const [battery, setBattery] = useState(99.4);
+  const [suitPressurePsi, setSuitPressurePsi] = useState(4.3); // Nominal spacesuit PSI (e.g. Apollo/EMU is ~4.3 psi pure O2)
 
   useEffect(() => {
     let timer;
@@ -18,28 +19,27 @@ export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
             setIsPlaying(false);
             sfx.scienceSuccess();
             confetti({
-              particleCount: 120,
-              spread: 70,
+              particleCount: 130,
+              spread: 75,
               origin: { y: 0.75 },
-              colors: ['#38bdf8', '#a855f7', '#f97316', '#10b981']
+              colors: ['#00f0ff', '#ff9900', '#00ff88']
             });
             return 100;
           }
           const next = prev + 1;
           if (onProgressUpdate) onProgressUpdate(next);
 
-          // Biometrics
-          const isSteep = activeRoute.safetyScore < 80 && next > 40 && next < 70;
-          setHeartRate(isSteep ? Math.floor(138 + Math.random() * 14) : Math.floor(92 + Math.random() * 8));
-          setBattery(b => Math.max(15, b - 0.08));
+          const isSteep = activeRoute.safetyScore < 80 && next > 35 && next < 70;
+          setHeartRate(isSteep ? Math.floor(142 + Math.random() * 16) : Math.floor(86 + Math.random() * 8));
+          setBattery(b => Math.max(12, b - 0.09));
 
-          if (isSteep && next % 10 === 0) {
+          if (isSteep && next % 8 === 0) {
             sfx.hazardAlarm();
           }
 
           return next;
         });
-      }, 200);
+      }, 180);
     }
     return () => clearInterval(timer);
   }, [isPlaying, activeRoute, onProgressUpdate]);
@@ -54,37 +54,41 @@ export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
     setIsPlaying(false);
     setProgress(0);
     if (onProgressUpdate) onProgressUpdate(0);
-    setHeartRate(94);
-    setBattery(98);
+    setHeartRate(88);
+    setBattery(99.4);
   };
 
   const currentKm = ((progress / 100) * activeRoute.distanceKm).toFixed(2);
+  const isDanger = activeRoute.safetyScore < 80;
 
   return (
-    <div className="bg-slate-900/90 backdrop-blur-md border border-slate-800 rounded-xl p-3 shadow-xl space-y-3">
-      {/* Simulation Control Bar */}
-      <div className="flex items-center justify-between">
+    <div className="hud-panel hud-corner-tl hud-corner-br rounded-xl p-3.5 space-y-3 border-cyan-500/30">
+      {/* Simulation Header */}
+      <div className="flex items-center justify-between border-b border-cyan-500/20 pb-2">
         <div className="flex items-center space-x-2">
-          <div className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-pulse" />
-          <span className="text-xs font-mono font-bold text-cyan-300 uppercase tracking-wider">
-            EVA MARSWALK SIMULATOR
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-cyan-500"></span>
+          </span>
+          <span className="font-heading text-xs font-bold tracking-wider text-cyan-300">
+            EVA TACTICAL LIFE-SUPPORT // SIMULATOR
           </span>
         </div>
         <div className="flex items-center space-x-2">
           <button
             onClick={togglePlay}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
               isPlaying
-                ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-lg shadow-amber-950'
-                : 'bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-950'
+                ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30'
+                : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/30'
             }`}
           >
             {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-            {isPlaying ? 'PAUSE' : 'SIMULATE 3D EVA'}
+            {isPlaying ? 'HOLD' : 'EXECUTE EVA'}
           </button>
           <button
             onClick={handleReset}
-            className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors cursor-pointer"
+            className="p-1 rounded-md bg-slate-900 border border-slate-700 hover:border-slate-500 text-slate-400 hover:text-white transition-colors cursor-pointer"
             title="Reset Simulation"
           >
             <RotateCcw className="w-3.5 h-3.5" />
@@ -92,47 +96,58 @@ export const EVASimulator = ({ activeRoute, onProgressUpdate }) => {
         </div>
       </div>
 
-      {/* Traversal Progress Bar */}
+      {/* Traversal Distance Progress Bar */}
       <div className="space-y-1">
-        <div className="flex justify-between text-[11px] font-mono text-slate-400">
-          <span>PROGRESS: {progress}%</span>
-          <span className="text-slate-200 font-semibold">{currentKm} / {activeRoute.distanceKm} KM</span>
+        <div className="flex justify-between text-[11px] font-mono">
+          <span className="text-slate-400">WAYPOINT DISPLACEMENT:</span>
+          <span className="text-cyan-300 font-bold">{currentKm} / {activeRoute.distanceKm} KM ({progress}%)</span>
         </div>
-        <div className="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+        <div className="w-full bg-slate-950 h-2 rounded-full overflow-hidden border border-slate-800">
           <div
-            className={`h-full rounded-full transition-all duration-200 ${
-              activeRoute.safetyScore < 80 ? 'bg-gradient-to-r from-amber-500 to-rose-500' : 'bg-gradient-to-r from-cyan-400 to-emerald-400'
+            className={`h-full rounded-full transition-all duration-150 ${
+              isDanger 
+                ? 'bg-gradient-to-r from-amber-500 to-rose-600 shadow-[0_0_10px_rgba(244,63,94,0.5)]' 
+                : 'bg-gradient-to-r from-cyan-400 to-emerald-400 shadow-[0_0_10px_rgba(0,240,255,0.5)]'
             }`}
             style={{ width: `${progress}%` }}
           />
         </div>
       </div>
 
-      {/* Live Astronaut Biometrics */}
-      <div className="grid grid-cols-3 gap-2 text-center font-mono">
-        <div className="bg-slate-950/80 p-1.5 rounded-lg border border-slate-800">
-          <div className="text-[9px] text-slate-500 flex items-center justify-center gap-1">
-            <Heart className="w-2.5 h-2.5 text-rose-400 animate-pulse" /> HEART RATE
+      {/* Real-time Astronaut Biometric HUD Sensors */}
+      <div className="grid grid-cols-4 gap-2 text-center font-mono">
+        <div className="bg-slate-950/90 p-2 rounded-lg border border-slate-800">
+          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1">
+            <Heart className="w-2.5 h-2.5 text-rose-400 animate-pulse" /> METABOLIC
           </div>
-          <div className={`text-xs font-bold mt-0.5 ${heartRate > 120 ? 'text-rose-400 animate-pulse' : 'text-slate-200'}`}>
+          <div className={`text-xs font-bold mt-1 ${heartRate > 120 ? 'text-rose-400 animate-pulse hud-glow-amber' : 'text-slate-100'}`}>
             {heartRate} <span className="text-[9px] text-slate-500">BPM</span>
           </div>
         </div>
 
-        <div className="bg-slate-950/80 p-1.5 rounded-lg border border-slate-800">
-          <div className="text-[9px] text-slate-500 flex items-center justify-center gap-1">
-            <Battery className="w-2.5 h-2.5 text-emerald-400" /> SUIT POWER
+        <div className="bg-slate-950/90 p-2 rounded-lg border border-slate-800">
+          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1">
+            <Battery className="w-2.5 h-2.5 text-emerald-400" /> EMU POWER
           </div>
-          <div className="text-xs font-bold text-slate-200 mt-0.5">
-            {battery.toFixed(0)}%
+          <div className="text-xs font-bold text-emerald-300 mt-1">
+            {battery.toFixed(1)}%
           </div>
         </div>
 
-        <div className="bg-slate-950/80 p-1.5 rounded-lg border border-slate-800">
-          <div className="text-[9px] text-slate-500 flex items-center justify-center gap-1">
-            <Radio className="w-2.5 h-2.5 text-cyan-400" /> ASTRONAUT
+        <div className="bg-slate-950/90 p-2 rounded-lg border border-slate-800">
+          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1">
+            <Compass className="w-2.5 h-2.5 text-cyan-400" /> SUIT O₂
           </div>
-          <div className="text-xs font-bold text-cyan-400 mt-0.5">
+          <div className="text-xs font-bold text-cyan-300 mt-1">
+            {suitPressurePsi} <span className="text-[9px] text-slate-500">PSI</span>
+          </div>
+        </div>
+
+        <div className="bg-slate-950/90 p-2 rounded-lg border border-slate-800">
+          <div className="text-[9px] text-slate-400 flex items-center justify-center gap-1">
+            <Radio className="w-2.5 h-2.5 text-amber-400" /> CREW
+          </div>
+          <div className="text-xs font-bold text-amber-300 mt-1 truncate">
             SHASWAT
           </div>
         </div>
