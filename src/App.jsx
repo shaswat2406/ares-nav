@@ -7,13 +7,16 @@ import { ElevationProfile } from './components/ElevationProfile';
 import { EVASimulator } from './components/EVASimulator';
 import { MissionExportModal } from './components/MissionExportModal';
 import { PRECOMPUTED_ROUTES, SCIENCE_TARGETS } from './data/jezeroData';
+import { computeCustomAStarRoute } from './utils/astarEngine';
 import { sfx } from './utils/soundFX';
-import { Rocket, ShieldAlert, Navigation, Layers, Box, Map as MapIcon, Crosshair, FileDown, Radio } from 'lucide-react';
+import { Rocket, ShieldAlert, Navigation, Layers, Box, Map as MapIcon, Crosshair, FileDown, Radio, Target } from 'lucide-react';
 
 function App() {
-  const [viewMode, setViewMode] = useState('3d'); // '3d' or '2d'
-  const [routeType, setRouteType] = useState('safe'); // 'safe' or 'direct'
-  const [selectedTarget, setSelectedTarget] = useState(SCIENCE_TARGETS[1]); // Three Forks Delta Front
+  const [viewMode, setViewMode] = useState('3d');
+  const [routeType, setRouteType] = useState('safe'); // 'safe', 'direct', or 'custom'
+  const [customRoute, setCustomRoute] = useState(null);
+  const [customTarget, setCustomTarget] = useState(null);
+  const [selectedTarget, setSelectedTarget] = useState(SCIENCE_TARGETS[1]);
   const [simulationProgress, setSimulationProgress] = useState(0);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [activeLayers, setActiveLayers] = useState({
@@ -23,7 +26,7 @@ function App() {
     targets: true
   });
 
-  const activeRoute = PRECOMPUTED_ROUTES[routeType];
+  const activeRoute = routeType === 'custom' && customRoute ? customRoute : PRECOMPUTED_ROUTES[routeType];
 
   const handleRouteSwitch = (type) => {
     sfx.click();
@@ -41,6 +44,17 @@ function App() {
   const handleSelectTarget = (target) => {
     sfx.click();
     setSelectedTarget(target);
+  };
+
+  // Interactive Click-to-Pathfind on 3D terrain
+  const handleTerrainClick = (targetX, targetZ) => {
+    setCustomTarget({ x: targetX, z: targetZ });
+    // Compute safe path avoiding obstacles and steep slopes
+    const computed = computeCustomAStarRoute(0, 0, targetX, targetZ, 15.0);
+    setCustomRoute(computed);
+    setRouteType('custom');
+    setSimulationProgress(0);
+    sfx.scienceSuccess();
   };
 
   return (
@@ -102,7 +116,7 @@ function App() {
                 onClick={() => handleRouteSwitch('safe')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer ${
                   routeType === 'safe'
-                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/50'
+                    ? 'bg-emerald-600 text-white shadow-md shadow-emerald-950/50 font-bold'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -113,13 +127,26 @@ function App() {
                 onClick={() => handleRouteSwitch('direct')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer ${
                   routeType === 'direct'
-                    ? 'bg-rose-600 text-white shadow-md shadow-rose-950/50'
+                    ? 'bg-rose-600 text-white shadow-md shadow-rose-950/50 font-bold'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
                 <ShieldAlert className="w-3.5 h-3.5" />
                 Direct Line (Hazard)
               </button>
+              {customRoute && (
+                <button
+                  onClick={() => handleRouteSwitch('custom')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer ${
+                    routeType === 'custom'
+                      ? 'bg-amber-600 text-white shadow-md shadow-amber-950/50 font-bold animate-pulse'
+                      : 'text-amber-400 hover:text-amber-200'
+                  }`}
+                >
+                  <Target className="w-3.5 h-3.5" />
+                  Custom Clicked Path
+                </button>
+              )}
             </div>
 
             {/* Export Mission Button */}
@@ -167,6 +194,8 @@ function App() {
                 activeLayers={activeLayers}
                 activeRoute={activeRoute}
                 onSelectTarget={handleSelectTarget}
+                onTerrainClick={handleTerrainClick}
+                customTarget={customTarget}
                 simulationProgress={simulationProgress}
               />
             ) : (

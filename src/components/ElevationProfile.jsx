@@ -3,15 +3,17 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 import { TrendingUp, Mountain } from 'lucide-react';
 
 export const ElevationProfile = ({ activeRoute }) => {
-  // Generate elevation samples along the route path
-  const chartData = [
-    { dist: '0.0 km', elev: -2570, slope: 2.1, note: 'Hab Alpha' },
-    { dist: '0.8 km', elev: -2562, slope: 3.5, note: 'Valley Pass' },
-    { dist: '1.6 km', elev: -2540, slope: 4.8, note: 'Séítah Outcrop' },
-    { dist: '2.4 km', elev: activeRoute.safetyScore > 80 ? -2515 : -2440, slope: activeRoute.safetyScore > 80 ? 7.2 : 26.2, note: activeRoute.safetyScore > 80 ? 'Delta Ramp' : 'Scarp Cliff (Danger!)' },
-    { dist: '3.2 km', elev: -2480, slope: 4.1, note: 'Three Forks' },
-    { dist: '3.8 km', elev: -2570, slope: 3.2, note: 'Hab Return' }
-  ];
+  // Use dynamically calculated profile if available, otherwise default sample
+  const chartData = activeRoute.elevationProfile && activeRoute.elevationProfile.length > 0 
+    ? activeRoute.elevationProfile 
+    : [
+        { dist: '0.0 km', elev: -2570, slope: 2.1, note: 'Hab Alpha' },
+        { dist: '0.8 km', elev: -2562, slope: 3.5, note: 'Valley Pass' },
+        { dist: '1.6 km', elev: -2540, slope: 4.8, note: 'Séítah Outcrop' },
+        { dist: '2.4 km', elev: activeRoute.safetyScore > 80 ? -2515 : -2440, slope: activeRoute.safetyScore > 80 ? 7.2 : 26.2, note: activeRoute.safetyScore > 80 ? 'Delta Ramp' : 'Scarp Cliff (Danger!)' },
+        { dist: '3.2 km', elev: -2480, slope: 4.1, note: 'Three Forks' },
+        { dist: `${activeRoute.distanceKm} km`, elev: -2570, slope: 3.2, note: 'Hab Return' }
+      ];
 
   return (
     <div className="bg-slate-900/90 backdrop-blur border border-slate-800 rounded-xl p-3 shadow-xl space-y-2">
@@ -24,7 +26,7 @@ export const ElevationProfile = ({ activeRoute }) => {
           <TrendingUp className="w-3 h-3 text-cyan-400" />
           <span>Max Incline: </span>
           <span className={`font-bold ${activeRoute.maxSlopeDeg > 15 ? 'text-rose-400 animate-pulse' : 'text-emerald-400'}`}>
-            {activeRoute.maxSlopeDeg}°
+            {activeRoute.maxSlopeDeg}° {activeRoute.maxSlopeDeg > 15 ? '(HAZARD)' : '(SAFE)'}
           </span>
         </div>
       </div>
@@ -39,7 +41,7 @@ export const ElevationProfile = ({ activeRoute }) => {
               </linearGradient>
             </defs>
             <XAxis dataKey="dist" stroke="#64748b" fontSize={10} tickLine={false} />
-            <YAxis stroke="#64748b" fontSize={10} domain={[-2600, -2400]} tickLine={false} />
+            <YAxis stroke="#64748b" fontSize={10} domain={['dataMin - 20', 'dataMax + 20']} tickLine={false} />
             <Tooltip
               content={({ active, payload }) => {
                 if (active && payload && payload.length) {
