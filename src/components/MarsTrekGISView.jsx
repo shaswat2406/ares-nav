@@ -1,175 +1,51 @@
 import React, { useEffect, useRef, useState } from 'react';
-import * as maplibregl from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
-import { Layers, Compass, Eye, ShieldAlert, Zap, Navigation, Mountain, CheckCircle2, ChevronRight, Activity, Camera, Radio } from 'lucide-react';
+import { MapContainer, TileLayer, Circle, Polyline, Marker, Popup, LayersControl } from 'react-leaflet';
+import L from 'leaflet';
 import { HABITAT_BASE, SCIENCE_TARGETS, HAZARD_ZONES, PRECOMPUTED_ROUTES, SOL_TELEMETRY } from '../data/jezeroData';
-import { computeCustomAStarRoute } from '../utils/astarEngine';
 import { sfx } from '../utils/soundFX';
 import confetti from 'canvas-confetti';
+import { Activity, ShieldAlert, Navigation, Mountain, CheckCircle2, ChevronRight, Radio, Compass, Eye, Zap } from 'lucide-react';
+
+// Custom icons using Lucide/SVG data URIs
+const createCustomIcon = (bgColor, borderColor, text) => {
+  return L.divIcon({
+    className: 'custom-map-icon',
+    html: `
+      <div style="
+        background-color: ${bgColor};
+        border: 2px solid ${borderColor};
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: monospace;
+        font-weight: bold;
+        font-size: 11px;
+        color: white;
+        box-shadow: 0 0 14px ${borderColor};
+      ">
+        ${text}
+      </div>
+    `,
+    iconSize: [32, 32],
+    iconAnchor: [16, 16]
+  });
+};
+
+const habIcon = createCustomIcon('#0284c7', '#38bdf8', 'HAB');
+const targetIcon = createCustomIcon('#7c3aed', '#c084fc', 'SCI');
 
 export function MarsTrekGISView() {
-  const mapContainer = useRef(null);
-  const map = useRef(null);
-  const [pitch, setPitch] = useState(60);
-  const [bearing, setBearing] = useState(-30);
   const [activeRouteType, setActiveRouteType] = useState('safe');
   const [selectedTarget, setSelectedTarget] = useState(SCIENCE_TARGETS[1]);
   const [isSimulating, setIsSimulating] = useState(false);
   const [simProgress, setSimProgress] = useState(0);
 
   const activeRoute = PRECOMPUTED_ROUTES[activeRouteType];
+  const centerPos = [HABITAT_BASE.lat, HABITAT_BASE.lng];
 
-  useEffect(() => {
-    if (map.current) return;
-
-    // Real USGS Astrogeology / OpenPlanetary Mars Global Basemap & HiRISE/MOLA Tile Server
-    const marsStyle = {
-      version: 8,
-      sources: {
-        'mars-mola-elevation': {
-          type: 'raster',
-          tiles: [
-            'https://cartocdn-gusc.global.ssl.fastly.net/opmbuilder/api/v1/map/named/opm:mars_v1/all/{z}/{x}/{y}.png'
-          ],
-          tileSize: 256,
-          attribution: 'USGS Astrogeology / NASA JPL Mars Trek / OpenPlanetary'
-        }
-      },
-      layers: [
-        {
-          id: 'mars-surface-raster',
-          type: 'raster',
-          source: 'mars-mola-elevation',
-          paint: {
-            'raster-opacity': 0.92,
-            'raster-contrast': 0.15,
-            'raster-brightness-min': 0.05
-          }
-        }
-      ]
-    };
-
-    map.current = new maplibregl.Map({
-      container: mapContainer.current,
-      style: marsStyle,
-      center: [77.4350, 18.4447], // Jezero Crater Delta center
-      zoom: 12.8,
-      pitch: 60,
-      bearing: -30,
-      maxZoom: 18,
-      minZoom: 6
-    });
-
-    map.current.on('load', () => {
-      // Add Hazard Perimeters
-      HAZARD_ZONES.forEach(hz => {
-        const coords = [];
-        const steps = 32;
-        const radiusDeg = hz.radius / 100000;
-        for (let i = 0; i <= steps; i++) {
-          const angle = (i / steps) * (Math.PI * 2);
-          coords.push([
-            hz.center[1] + Math.cos(angle) * radiusDeg * 1.5,
-            hz.center[0] + Math.sin(angle) * radiusDeg
-          ]);
-        }
-
-        map.current.addSource(`hazard-${hz.id}`, {
-          type: 'geojson',
-          data: {
-            type: 'Feature',
-            geometry: { type: 'Polygon', coordinates: [coords] }
-          }
-        });
-
-        map.current.addLayer({
-          id: `layer-${hz.id}`,
-          type: 'fill',
-          source: `hazard-${hz.id}`,
-          paint: {
-            'fill-color': hz.color,
-            'fill-opacity': 0.35,
-            'fill-outline-color': hz.color
-          }
-        });
-      });
-
-      // Add Habitat Base Marker
-      const habEl = document.createElement('div');
-      habEl.className = 'w-8 h-8 rounded-full bg-cyan-500 border-2 border-white shadow-[0_0_15px_#00f0ff] flex items-center justify-center font-mono font-bold text-slate-950 text-[10px] cursor-pointer';
-      habEl.innerHTML = 'HAB';
-      new maplibregl.Marker({ element: habEl })
-        .setLngLat([HABITAT_BASE.lng, HABITAT_BASE.lat])
-        .addTo(map.current);
-
-      // Add Science Targets Markers
-      SCIENCE_TARGETS.forEach(target => {
-        const sciEl = document.createElement('div');
-        sciEl.className = 'w-7 h-7 rounded-full bg-purple-600 border-2 border-purple-300 shadow-[0_0_15px_#c084fc] flex items-center justify-center font-mono font-bold text-white text-[9px] cursor-pointer hover:scale-125 transition-all';
-        sciEl.innerHTML = 'SCI';
-        sciEl.addEventListener('click', () => {
-          sfx.click();
-          setSelectedTarget(target);
-        });
-
-        new maplibregl.Marker({ element: sciEl })
-          .setLngLat([target.lng, target.lat])
-          .addTo(map.current);
-      });
-    });
-
-    map.current.on('rotate', () => {
-      setBearing(Math.round(map.current.getBearing()));
-      setPitch(Math.round(map.current.getPitch()));
-    });
-  }, []);
-
-  // Update Route Polyline Layer dynamically
-  useEffect(() => {
-    if (!map.current || !map.current.isStyleLoaded()) return;
-
-    const routeGeoJSON = {
-      type: 'Feature',
-      geometry: {
-        type: 'LineString',
-        coordinates: activeRoute.waypoints.map(wp => [wp[1], wp[0]])
-      }
-    };
-
-    if (map.current.getSource('route-line')) {
-      map.current.getSource('route-line').setData(routeGeoJSON);
-    } else {
-      map.current.addSource('route-line', {
-        type: 'geojson',
-        data: routeGeoJSON
-      });
-
-      map.current.addLayer({
-        id: 'route-line-layer',
-        type: 'line',
-        source: 'route-line',
-        layout: {
-          'line-join': 'round',
-          'line-cap': 'round'
-        },
-        paint: {
-          'line-color': activeRouteType === 'safe' ? '#00ff88' : '#ff3344',
-          'line-width': 5,
-          'line-opacity': 0.95
-        }
-      });
-    }
-
-    if (map.current.getLayer('route-line-layer')) {
-      map.current.setPaintProperty(
-        'route-line-layer',
-        'line-color',
-        activeRouteType === 'safe' ? '#00ff88' : '#ff3344'
-      );
-    }
-  }, [activeRouteType, activeRoute]);
-
-  // Real-time Traversal Simulation
   const handleToggleSim = () => {
     sfx.click();
     setIsSimulating(!isSimulating);
@@ -183,7 +59,7 @@ export function MarsTrekGISView() {
           if (p >= 100) {
             setIsSimulating(false);
             sfx.scienceSuccess();
-            confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+            confetti({ particleCount: 110, spread: 70, origin: { y: 0.6 } });
             return 100;
           }
           return p + 1;
@@ -194,25 +70,114 @@ export function MarsTrekGISView() {
   }, [isSimulating]);
 
   return (
-    <div className="relative w-full h-[720px] rounded-2xl overflow-hidden border border-cyan-500/30 shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-[#050811] flex">
-      {/* 1. Main High-Resolution Real GIS Mars Map Canvas */}
-      <div ref={mapContainer} className="w-full h-full relative" />
+    <div className="relative w-full h-[720px] rounded-2xl overflow-hidden border border-cyan-500/30 shadow-[0_0_50px_rgba(0,0,0,0.9)] bg-[#040816] flex">
+      {/* High-Contrast Interactive Planetary GIS Canvas */}
+      <MapContainer
+        center={centerPos}
+        zoom={12}
+        maxZoom={16}
+        minZoom={8}
+        scrollWheelZoom={true}
+        className="w-full h-full"
+      >
+        {/* Layer 1: NASA JPL Official Mars Trek Global MOLA Shaded Color Elevation Basemap */}
+        <TileLayer
+          attribution='&copy; NASA / JPL / USGS Astrogeology // Mars Trek'
+          url="https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg"
+          maxNativeZoom={7}
+          maxZoom={16}
+        />
 
-      {/* 2. Overlaid Tactical HUD Top Bar */}
-      <div className="absolute top-4 left-4 z-10 flex items-center gap-2.5">
+        {/* Habitat Base Marker */}
+        <Marker position={[HABITAT_BASE.lat, HABITAT_BASE.lng]} icon={habIcon}>
+          <Popup className="custom-popup">
+            <div className="p-1 text-slate-900 font-mono text-xs">
+              <h3 className="font-bold text-sky-700">{HABITAT_BASE.name}</h3>
+              <p className="text-slate-600 mt-1">{HABITAT_BASE.description}</p>
+              <div className="mt-2 text-[10px] bg-slate-100 p-1 rounded font-bold">
+                18.4447°N, 77.4508°E | Elev: -2,570m MOLA
+              </div>
+            </div>
+          </Popup>
+        </Marker>
+
+        {/* Hazard Zones (Séítah Dunes, Delta Cliffs, Boulders) */}
+        {HAZARD_ZONES.map(hz => (
+          <Circle
+            key={hz.id}
+            center={hz.center}
+            radius={hz.radius}
+            pathOptions={{
+              color: hz.color,
+              fillColor: hz.color,
+              fillOpacity: 0.35,
+              weight: 2,
+              dashArray: '5, 8'
+            }}
+          >
+            <Popup>
+              <div className="p-1 text-slate-900 font-mono text-xs">
+                <div className="font-bold text-rose-700">⚠️ {hz.name}</div>
+                <div className="text-slate-600 mt-0.5">{hz.type} ({hz.severity})</div>
+                <p className="text-[11px] text-slate-500 mt-1">{hz.risk}</p>
+              </div>
+            </Popup>
+          </Circle>
+        ))}
+
+        {/* CRISM Spectroscopy Science Sites */}
+        {SCIENCE_TARGETS.map(target => (
+          <Marker
+            key={target.id}
+            position={[target.lat, target.lng]}
+            icon={targetIcon}
+            eventHandlers={{
+              click: () => {
+                sfx.click();
+                setSelectedTarget(target);
+              }
+            }}
+          >
+            <Popup>
+              <div className="p-1 text-slate-900 font-mono text-xs max-w-[220px]">
+                <div className="font-bold text-purple-700">{target.name}</div>
+                <div className="text-[10px] text-purple-600 mt-0.5 font-bold">
+                  {target.targetMineral}
+                </div>
+                <p className="text-[11px] text-slate-600 mt-1">{target.description}</p>
+                <div className="mt-1 text-[10px] bg-purple-50 text-purple-900 p-1 rounded flex justify-between font-bold">
+                  <span>Biosignature Potential:</span>
+                  <span>{target.biosignaturePotential}</span>
+                </div>
+              </div>
+            </Popup>
+          </Marker>
+        ))}
+
+        {/* Active Route Traversal Polyline */}
+        <Polyline
+          positions={activeRoute.waypoints}
+          pathOptions={{
+            color: activeRouteType === 'safe' ? '#00ff88' : '#ff3344',
+            weight: 5,
+            opacity: 0.95,
+            dashArray: activeRouteType === 'safe' ? undefined : '8, 8'
+          }}
+        />
+      </MapContainer>
+
+      {/* Overlaid Tactical HUD Top Bar */}
+      <div className="absolute top-4 left-4 z-[400] flex items-center gap-2.5 pointer-events-none">
         <div className="bg-[#040816]/95 backdrop-blur-md border border-cyan-500/40 px-3.5 py-1.5 rounded-lg text-xs font-mono text-cyan-300 flex items-center gap-2 shadow-2xl">
           <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
           <span className="font-heading font-bold tracking-wider">
-            NASA MARS TREK // GIS HIGH-RES MOSAIC
+            NASA JPL MARS TREK // MOLA COLOR SHADED RELIEF
           </span>
-        </div>
-        <div className="bg-[#040816]/95 backdrop-blur-md border border-slate-800 px-3 py-1.5 rounded-lg text-xs font-mono text-slate-300">
-          BEARING: {bearing}° | PITCH: {pitch}°
         </div>
       </div>
 
-      {/* 3. Algorithm Switcher Floating Toolbar */}
-      <div className="absolute top-4 right-4 z-10 flex items-center gap-2 bg-[#040816]/95 border border-cyan-500/30 p-1.5 rounded-xl shadow-2xl backdrop-blur-md">
+      {/* Algorithm Switcher Floating Toolbar */}
+      <div className="absolute top-4 right-4 z-[400] flex items-center gap-2 bg-[#040816]/95 border border-cyan-500/30 p-1.5 rounded-xl shadow-2xl backdrop-blur-md">
         <button
           onClick={() => {
             sfx.click();
@@ -243,8 +208,8 @@ export function MarsTrekGISView() {
         </button>
       </div>
 
-      {/* 4. Floating HUD Mission Telemetry Card (Bottom Left) */}
-      <div className="absolute bottom-4 left-4 z-10 max-w-sm w-full bg-[#040816]/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl p-3.5 shadow-2xl space-y-2.5 font-mono text-xs">
+      {/* Floating HUD Mission Telemetry Card (Bottom Left) */}
+      <div className="absolute bottom-4 left-4 z-[400] max-w-sm w-full bg-[#040816]/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl p-3.5 shadow-2xl space-y-2.5 font-mono text-xs">
         <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1.5">
           <div className="flex items-center gap-1.5 text-cyan-400 font-bold font-heading">
             <Activity className="w-3.5 h-3.5 text-cyan-400" /> EVA ROUTE METRICS
@@ -287,9 +252,9 @@ export function MarsTrekGISView() {
         </div>
       </div>
 
-      {/* 5. Waypoint Inspector Card (Bottom Right) */}
+      {/* Waypoint Inspector Card (Bottom Right) */}
       {selectedTarget && (
-        <div className="absolute bottom-4 right-4 z-10 max-w-sm w-full bg-[#040816]/95 backdrop-blur-xl border border-purple-500/30 rounded-xl p-3.5 shadow-2xl space-y-2 font-mono text-xs">
+        <div className="absolute bottom-4 right-4 z-[400] max-w-sm w-full bg-[#040816]/95 backdrop-blur-xl border border-purple-500/30 rounded-xl p-3.5 shadow-2xl space-y-2 font-mono text-xs">
           <div className="flex items-center justify-between border-b border-purple-500/20 pb-1.5">
             <span className="font-heading font-bold text-purple-300 text-xs">
               🔬 {selectedTarget.name}
