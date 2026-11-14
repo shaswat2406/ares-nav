@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, Pause, RotateCcw, Heart, Battery, Radio, Compass, ShieldAlert } from 'lucide-react';
 import { sfx } from '../utils/soundFX';
 import confetti from 'canvas-confetti';
