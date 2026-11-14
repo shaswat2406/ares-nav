@@ -1,0 +1,107 @@
+{
+  "status": "NOMINAL",
+  "sol_telemetry": {
+    "station": "Jezero MEDA-RAD Package",
+    "sol": 1320,
+    "atmospheric_pressure_pa": 742,
+    "ambient_temp_c": -58.2,
+    "ground_temp_c": -14.6,
+    "dust_optical_depth_tau": 0.44,
+    "cosmic_radiation_msv_day": 0.62,
+    "wind_velocity_mps": 4.8,
+    "wind_azimuth_deg": 68
+  },
+  "science_targets": [
+    {
+      "target_id": "SCI-01",
+      "name": "Kodiak Butte (Delta Scarp)",
+      "latitude": 18.423,
+      "longitude": 77.43,
+      "mineral": "Smectite Clays & Delta Topsets",
+      "biosignature_confidence": 0.92
+    },
+    {
+      "target_id": "SCI-02",
+      "name": "Three Forks Delta Front",
+      "latitude": 18.455,
+      "longitude": 77.412,
+      "mineral": "Magnesium Carbonates & Mudstones",
+      "biosignature_confidence": 0.97
+    },
+    {
+      "target_id": "SCI-03",
+      "name": "S\u00e9\u00edtah Subsurface Outcrop",
+      "latitude": 18.435,
+      "longitude": 77.442,
+      "mineral": "Olivine-Rich Cumulate",
+      "biosignature_confidence": 0.64
+    }
+  ],
+  "safe_path_grid_nodes": [
+    [
+      25,
+      25
+    ],
+    [
+      25,
+      24
+    ],
+    [
+      26,
+      23
+    ],
+    [
+      26,
+      22
+    ],
+    [
+      26,
+      21
+    ],
+    [
+      26,
+      20
+    ],
+    [
+      25,
+      19
+    ],
+    [
+      24,
+      18
+    ],
+    [
+      23,
+      17
+    ],
+    [
+      22,
+      16
+    ],
+    [
+      21,
+      15
+    ],
+    [
+      21,
+      14
+    ],
+    [
+      21,
+      13
+    ],
+    [
+      20,
+      12
+    ],
+    [
+      19,
+      11
+    ],
+    [
+      18,
+      10
+    ]
+  ],
+  "total_distance_km": 1.6
+}
