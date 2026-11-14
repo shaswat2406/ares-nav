@@ -8,12 +8,13 @@ import { EVASimulator } from './components/EVASimulator';
 import { MissionExportModal } from './components/MissionExportModal';
 import { PRECOMPUTED_ROUTES, SCIENCE_TARGETS } from './data/jezeroData';
 import { sfx } from './utils/soundFX';
-import { Rocket, ShieldAlert, Navigation, Layers, Box, Map as MapIcon, Crosshair, FileDown, Volume2, VolumeX } from 'lucide-react';
+import { Rocket, ShieldAlert, Navigation, Layers, Box, Map as MapIcon, Crosshair, FileDown, Radio } from 'lucide-react';
 
 function App() {
   const [viewMode, setViewMode] = useState('3d'); // '3d' or '2d'
   const [routeType, setRouteType] = useState('safe'); // 'safe' or 'direct'
   const [selectedTarget, setSelectedTarget] = useState(SCIENCE_TARGETS[1]); // Three Forks Delta Front
+  const [simulationProgress, setSimulationProgress] = useState(0);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [activeLayers, setActiveLayers] = useState({
     topography: true,
@@ -43,12 +44,12 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col selection:bg-orange-500 selection:text-black">
+    <div className="min-h-screen bg-[#030712] text-slate-100 flex flex-col selection:bg-orange-500 selection:text-black">
       {/* Top Tactical Mission Control Bar */}
-      <header className="border-b border-slate-800 bg-slate-950/95 backdrop-blur-md sticky top-0 z-50 px-6 py-2.5">
+      <header className="border-b border-slate-800/80 bg-slate-950/95 backdrop-blur-md sticky top-0 z-50 px-6 py-2.5">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 via-rose-600 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-950/40 border border-orange-400/40">
+            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-orange-600 via-rose-600 to-amber-500 flex items-center justify-center shadow-lg shadow-orange-950/50 border border-orange-400/40">
               <Rocket className="w-5 h-5 text-white transform -rotate-45" />
             </div>
             <div>
@@ -56,12 +57,13 @@ function App() {
                 <h1 className="font-extrabold text-lg tracking-wider text-slate-100 uppercase">
                   ARES-NAV <span className="text-orange-400 text-xs font-mono px-2 py-0.5 rounded border border-orange-500/40 bg-orange-950/40">TACTICAL 3D</span>
                 </h1>
-                <span className="text-[11px] bg-slate-800 text-cyan-400 border border-cyan-800/40 px-2 py-0.5 rounded font-mono font-semibold">
-                  SINGULAR ANOMALY
+                <span className="text-[11px] bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 px-2 py-0.5 rounded font-mono font-semibold flex items-center gap-1">
+                  <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+                  SHASWAT SINHA // SURAT
                 </span>
               </div>
               <p className="text-xs text-slate-400">
-                NASA Space Apps Challenge 2026 // Interplanetary Survival Guide: Martian Map
+                NASA Space Apps Challenge 2026 // Team Singular Anomaly
               </p>
             </div>
           </div>
@@ -74,7 +76,7 @@ function App() {
                 onClick={() => handleViewSwitch('3d')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-mono font-medium transition-all cursor-pointer ${
                   viewMode === '3d'
-                    ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-950/50'
+                    ? 'bg-gradient-to-r from-orange-600 to-amber-600 text-white shadow-md shadow-orange-950/50 font-bold'
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
@@ -126,7 +128,7 @@ function App() {
                 sfx.click();
                 setIsExportOpen(true);
               }}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-mono font-bold bg-slate-900 border border-orange-500/40 text-orange-400 hover:bg-orange-950/30 transition-all cursor-pointer shadow-lg shadow-orange-950/30"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-mono font-bold bg-slate-900 border border-orange-500/50 text-orange-400 hover:bg-orange-950/40 transition-all cursor-pointer shadow-lg shadow-orange-950/40"
             >
               <FileDown className="w-3.5 h-3.5" />
               EXPORT EVA PLAN
@@ -142,29 +144,30 @@ function App() {
           <div className="bg-slate-900/70 border border-slate-800 rounded-xl p-3 flex items-center justify-between">
             <div className="flex items-center space-x-2 text-xs font-mono">
               <Layers className="w-4 h-4 text-orange-400" />
-              <span className="text-slate-300 font-semibold">MISSION TARGET:</span>
-              <span className="text-orange-400 font-bold">JEZERO CRATER ANCIENT DELTA</span>
+              <span className="text-slate-300 font-semibold">TARGET:</span>
+              <span className="text-orange-400 font-bold">JEZERO CRATER RIVER DELTA</span>
             </div>
             <div className="flex items-center space-x-3 text-xs font-mono text-slate-400">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-cyan-400"></span> Octavia E. Butler Base
+                <span className="w-2 h-2 rounded-full bg-cyan-400"></span> Hab Alpha
               </span>
               <span className="flex items-center gap-1">
                 <span className="w-2 h-2 rounded-full bg-purple-400"></span> 4 Science Sites
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-rose-500"></span> 3 Obstacle Zones
+                <span className="w-2 h-2 rounded-full bg-rose-500"></span> Obstacle Zones
               </span>
             </div>
           </div>
 
-          {/* Interactive Viewport (3D or 2D) */}
+          {/* Interactive 3D / 2D Viewport */}
           <div className="flex-1 relative">
             {viewMode === '3d' ? (
               <Mars3DView
                 activeLayers={activeLayers}
                 activeRoute={activeRoute}
                 onSelectTarget={handleSelectTarget}
+                simulationProgress={simulationProgress}
               />
             ) : (
               <MarsMapView
@@ -195,7 +198,7 @@ function App() {
           {/* EVA Marswalk Simulation */}
           <EVASimulator
             activeRoute={activeRoute}
-            onWaypointReach={(wp) => {}}
+            onProgressUpdate={(prog) => setSimulationProgress(prog)}
           />
 
           <EVAStatusHUD
@@ -222,7 +225,7 @@ function App() {
 
       {/* Footer */}
       <footer className="border-t border-slate-800/80 bg-slate-950 py-3 px-6 text-center text-xs text-slate-500 font-mono">
-        NASA Space Apps Challenge 2026 // Team Singular Anomaly (Surat Hub) // Built for Astronaut Surface EVA Traversal
+        NASA Space Apps Challenge 2026 // Shaswat Sinha // Team Singular Anomaly (Surat Hub)
       </footer>
     </div>
   );
