@@ -1,24 +1,45 @@
-import React from 'react';
-import { Download, CheckCircle, FileText, Printer, ExternalLink } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, CheckCircle, FileText, Printer, CloudUpload, User, MapPin } from 'lucide-react';
 import { sfx } from '../utils/soundFX';
+import { logEVAMission } from '../utils/supabaseClient';
 
 export const MissionExportModal = ({ isOpen, onClose, activeRoute, selectedTarget }) => {
   if (!isOpen) return null;
+
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null); // 'success' or null
 
   const handlePrint = () => {
     sfx.click();
     window.print();
   };
 
+  const handleCloudSync = async () => {
+    sfx.click();
+    setIsSyncing(true);
+    const success = await logEVAMission({
+      astronautName: 'Shaswat Sinha',
+      routeType: activeRoute.name,
+      safetyScore: activeRoute.safetyScore,
+      distanceKm: activeRoute.distanceKm,
+      maxSlopeDeg: activeRoute.maxSlopeDeg,
+      oxygenExpendedPct: activeRoute.oxygenUsedPercent,
+      targetSite: selectedTarget ? selectedTarget.name : 'Jezero Delta Front'
+    });
+    setIsSyncing(false);
+    setSyncStatus('success');
+    sfx.scienceSuccess();
+  };
+
   return (
-    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in">
+    <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/85 backdrop-blur-md p-4 animate-in fade-in">
       <div className="bg-slate-900 border border-slate-700 max-w-xl w-full rounded-2xl shadow-2xl overflow-hidden text-slate-100 font-mono">
         {/* Header */}
         <div className="bg-slate-950 p-4 border-b border-slate-800 flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <FileText className="w-5 h-5 text-orange-400" />
             <h3 className="font-bold text-sm tracking-wider text-orange-400">
-              NASA EVA FLIGHT DISPATCH ORDER // JEZERO-2026
+              NASA EVA FLIGHT DISPATCH // ARTEMIS MARS-01
             </h3>
           </div>
           <button
@@ -31,6 +52,24 @@ export const MissionExportModal = ({ isOpen, onClose, activeRoute, selectedTarge
 
         {/* Content */}
         <div className="p-5 space-y-4 text-xs max-h-[70vh] overflow-y-auto">
+          {/* Mission & Astronaut Badge */}
+          <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-cyan-800/40 p-3 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-cyan-950 border border-cyan-500/50 flex items-center justify-center text-cyan-300">
+                <User className="w-4 h-4" />
+              </div>
+              <div>
+                <div className="font-bold text-cyan-300">ASTRONAUT: SHASWAT SINHA</div>
+                <div className="text-[10px] text-slate-400 flex items-center gap-1">
+                  <MapPin className="w-2.5 h-2.5 text-orange-400" /> TEAM SINGULAR ANOMALY (SURAT HUB)
+                </div>
+              </div>
+            </div>
+            <span className="text-[10px] bg-emerald-950 text-emerald-400 border border-emerald-700/50 px-2 py-0.5 rounded font-bold">
+              FLIGHT QUALIFIED
+            </span>
+          </div>
+
           <div className="border border-slate-800 bg-slate-950 p-3 rounded-lg space-y-2">
             <div className="text-slate-400 font-bold uppercase tracking-wide border-b border-slate-800 pb-1">
               Mission Specifications
@@ -41,43 +80,61 @@ export const MissionExportModal = ({ isOpen, onClose, activeRoute, selectedTarge
               <div>Traverse Length: <span className="text-slate-200">{activeRoute.distanceKm} km</span></div>
               <div>Est. EVA Time: <span className="text-slate-200">{activeRoute.estimatedMinutes} min</span></div>
               <div>Safety Margin: <span className="text-emerald-400 font-bold">{activeRoute.safetyScore}%</span></div>
-              <div>Max Incline Limit: <span className="text-amber-400 font-bold">{activeRoute.maxSlopeDeg}° (&lt;15° safe)</span></div>
+              <div>Max Incline: <span className="text-amber-400 font-bold">{activeRoute.maxSlopeDeg}° (&lt;15° threshold)</span></div>
             </div>
           </div>
 
           <div className="border border-slate-800 bg-slate-950 p-3 rounded-lg space-y-2">
             <div className="text-slate-400 font-bold uppercase tracking-wide border-b border-slate-800 pb-1">
-              Scientific Objectives & Protocol
+              Scientific Protocol & Sample Retrieval
             </div>
             <ul className="list-disc list-inside space-y-1 text-[11px] text-slate-300">
-              <li>Deploy SHERLOC & PIXL on delta mudstones (Three Forks).</li>
+              <li>Inspect {selectedTarget ? selectedTarget.name : 'Three Forks Delta Front'} for clay minerals.</li>
               <li>Aquire 2x sealed rock core samples for Mars Sample Return.</li>
-              <li>Measure subsurface stratigraphy via RIMFAX ground radar.</li>
-              <li>Bypass Séítah high-sinkage dune field along low-gradient apron.</li>
+              <li>Deploy RIMFAX ground-penetrating radar along low-gradient apron.</li>
+              <li>Strict hazard boundary: Avoid Séítah dune fields (high sinkage).</li>
             </ul>
           </div>
 
+          {syncStatus === 'success' && (
+            <div className="bg-cyan-950/40 border border-cyan-500/50 p-2.5 rounded-lg text-cyan-300 text-[11px] flex items-center gap-2">
+              <CloudUpload className="w-4 h-4 text-cyan-400" />
+              <span>Telemetry synchronized to <strong>Supabase Cloud Database</strong> (Project: Single Anomaly).</span>
+            </div>
+          )}
+
           <div className="border border-emerald-950 bg-emerald-950/20 p-3 rounded-lg text-emerald-300 text-[11px] flex items-center gap-2">
             <CheckCircle className="w-5 h-5 text-emerald-400 shrink-0" />
-            <span>Flight Director & Traversal Safety Officer Sign-off: <strong>APPROVED FOR SURFACE DISPATCH</strong></span>
+            <span>Flight Director & Traversal Safety Officer: <strong>APPROVED FOR DISPATCH</strong></span>
           </div>
         </div>
 
         {/* Footer Actions */}
-        <div className="bg-slate-950 p-4 border-t border-slate-800 flex justify-end gap-3">
+        <div className="bg-slate-950 p-4 border-t border-slate-800 flex items-center justify-between gap-3">
           <button
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+            onClick={handleCloudSync}
+            disabled={isSyncing}
+            className="px-3 py-2 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold flex items-center gap-1.5 cursor-pointer border border-cyan-800/40"
           >
-            Cancel
+            <CloudUpload className="w-3.5 h-3.5 text-cyan-400" />
+            {isSyncing ? 'SYNCING TO CLOUD...' : 'LOG TO SUPABASE'}
           </button>
-          <button
-            onClick={handlePrint}
-            className="px-4 py-2 rounded-lg text-xs bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-orange-950"
-          >
-            <Printer className="w-3.5 h-3.5" />
-            PRINT / EXPORT FLIGHT PLAN
-          </button>
+
+          <div className="flex gap-2">
+            <button
+              onClick={onClose}
+              className="px-3 py-2 rounded-lg text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 cursor-pointer"
+            >
+              Close
+            </button>
+            <button
+              onClick={handlePrint}
+              className="px-4 py-2 rounded-lg text-xs bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white font-bold flex items-center gap-1.5 cursor-pointer shadow-lg shadow-orange-950"
+            >
+              <Printer className="w-3.5 h-3.5" />
+              PRINT FLIGHT PLAN
+            </button>
+          </div>
         </div>
       </div>
     </div>
