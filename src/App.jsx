@@ -369,9 +369,12 @@ function App() {
       </header>
 
       {/* ============================================================== */}
-      {/* 3. FLOATING LEFT PANEL: ALGORITHM SELECTOR & EVA CONFIG       */}
+      {/* 3 & 4. FLOATING TACTICAL PANELS (SURFACE 3D CANYON MODE ONLY)   */}
       {/* ============================================================== */}
-      <div className="absolute top-20 left-4 z-20 w-80 space-y-2.5 pointer-events-auto max-h-[85vh] overflow-y-auto pr-1">
+      {viewMode === 'surface3d' && (
+        <>
+          {/* 3. FLOATING LEFT PANEL: ALGORITHM SELECTOR & EVA CONFIG */}
+          <div className="absolute top-20 left-4 z-20 w-80 space-y-2.5 pointer-events-auto max-h-[85vh] overflow-y-auto pr-1">
         {/* Route Selector Card */}
         <div className="hud-glass hud-corner-tl hud-corner-br rounded-2xl p-3.5 border-cyan-500/30 space-y-2.5">
           <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1.5">
@@ -503,6 +506,11 @@ function App() {
         />
       </div>
 
+      {/* COLLAPSIBLE BOTTOM DRAWER: ELEVATION & SLOPE PROFILE */}
+      <ElevationDrawer activeRoute={activeRoute} />
+    </>
+  )}
+
       {/* ============================================================== */}
       {/* 5. FLOATING BENCHMARK COMPARISON MODAL                          */}
       {/* ============================================================== */}
@@ -520,11 +528,6 @@ function App() {
           />
         </div>
       )}
-
-      {/* ============================================================== */}
-      {/* 6. COLLAPSIBLE BOTTOM DRAWER: ELEVATION & SLOPE PROFILE       */}
-      {/* ============================================================== */}
-      <ElevationDrawer activeRoute={activeRoute} />
 
       {/* ============================================================== */}
       {/* 7. MODALS                                                      */}

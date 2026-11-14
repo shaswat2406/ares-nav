@@ -3,7 +3,7 @@
  * Displays authentic photography, mission dates, payload instruments, coordinates, and discoveries.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   X,
   ExternalLink,
@@ -16,11 +16,18 @@ import {
   Layers,
   Compass,
   ArrowRight,
-  Database
+  Database,
+  Image as ImageIcon
 } from 'lucide-react';
 import { sfx } from '../utils/soundFX';
 
 export function MarsSiteWikiModal({ site, isOpen, onClose, onEnterSurfaceView, onFlyToSite }) {
+  const [imgError, setImgError] = useState(false);
+
+  React.useEffect(() => {
+    setImgError(false);
+  }, [site]);
+
   if (!isOpen || !site) return null;
 
   const handleClose = () => {
@@ -148,12 +155,22 @@ export function MarsSiteWikiModal({ site, isOpen, onClose, onEnterSurfaceView, o
             <div className="bg-slate-900/90 border border-cyan-500/30 rounded-xl p-3 shadow-xl space-y-3">
               {/* Authentic Photo */}
               <div className="rounded-lg overflow-hidden border border-slate-800 bg-black">
-                <img
-                  src={site.image}
-                  alt={site.name}
-                  className="w-full h-44 object-cover object-center hover:scale-105 transition-transform duration-500"
-                  loading="lazy"
-                />
+                {imgError ? (
+                  <div className="w-full h-44 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950 flex flex-col items-center justify-center p-4 text-center border border-slate-800">
+                    <span className="text-4xl mb-2">{site.flag || '🪐'}</span>
+                    <span className="text-xs font-heading font-bold text-cyan-300">{site.name}</span>
+                    <span className="text-[10px] font-mono text-slate-400 mt-1">{site.organization} · {site.mission}</span>
+                    <span className="text-[9px] text-emerald-400 font-mono mt-0.5">{site.siteName}</span>
+                  </div>
+                ) : (
+                  <img
+                    src={site.image}
+                    alt={site.name}
+                    onError={() => setImgError(true)}
+                    className="w-full h-44 object-cover object-center hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                )}
                 <div className="p-2 text-[10px] text-slate-400 italic bg-slate-950/90 border-t border-slate-800 font-sans">
                   {site.imageCaption}
                 </div>
