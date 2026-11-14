@@ -1,10 +1,10 @@
-import React, { useRef, useMemo, useState, useEffect } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Float, Html, Stars, Sparkles } from '@react-three/drei';
 import * as THREE from 'three';
 import { HABITAT_BASE, SCIENCE_TARGETS, HAZARD_ZONES } from '../data/jezeroData';
 import { sfx } from '../utils/soundFX';
-import { Radio, AlertTriangle, Eye, Compass } from 'lucide-react';
+import { Radio, AlertTriangle, Eye, Compass, Shield, Flag } from 'lucide-react';
 
 // Realistic Martian Atmosphere & Dynamic Dust Storm Simulation
 function MartianAtmosphere({ dustStorm }) {
@@ -55,14 +55,12 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
 
       let height = -2.5;
 
-      // 1. Western River Delta
       if (x < -8 && x > -55 && Math.abs(z) < 35) {
         const deltaProgress = (Math.abs(x) - 8) / 40.0;
         const deltaFanShape = Math.max(0, 1.0 - Math.abs(z) / (15 + deltaProgress * 25));
         height += Math.min(6.5, deltaProgress * 5.8 * deltaFanShape);
       }
 
-      // 2. Neretva Vallis Inflow River Canyon
       const riverPath = Math.sin(x * 0.1) * 6 - 8;
       const distToRiver = Math.abs(z - riverPath);
       if (x < -20 && distToRiver < 8) {
@@ -70,14 +68,12 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
         height -= canyonDepth;
       }
 
-      // 3. Kodiak Butte
       const dKodiak = Math.sqrt((x - 14) ** 2 + (z - 22) ** 2);
       if (dKodiak < 7.0) {
         const butteFactor = Math.cos((dKodiak / 7.0) * (Math.PI / 2));
         height += Math.pow(butteFactor, 0.4) * 7.5;
       }
 
-      // 4. Belva Impact Crater
       const dBelva = Math.sqrt((x + 28) ** 2 + (z + 24) ** 2);
       if (dBelva < 14.0) {
         const craterRim = Math.sin((dBelva / 14.0) * Math.PI) * 2.2;
@@ -85,13 +81,11 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
         height += (craterRim - craterBowl);
       }
 
-      // 5. Outer crater rim wall
       if (d > 45) {
         const rimDist = d - 45;
         height += Math.pow(rimDist * 0.35, 1.8);
       }
 
-      // Micro-texture
       height += Math.sin(x * 0.4) * Math.cos(z * 0.4) * 0.6;
       height += Math.sin(x * 1.8 + z * 1.2) * 0.15;
 
@@ -101,7 +95,6 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
     geom.computeVertexNormals();
     const normals = geom.attributes.normal;
 
-    // Authentic Mars Regolith Palette
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const z = pos.getZ(i);
@@ -166,15 +159,14 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
   );
 }
 
-// Camera Controller: Handles Orbit Mode vs. First-Person Visor POV
+// Camera Rig: Handles Orbit Mode vs. First-Person Indian Astronaut Visor
 function CameraRig({ isFirstPerson, astronautPos, route, progressPercent }) {
   useFrame(({ camera }) => {
     if (isFirstPerson && astronautPos) {
-      // Position camera right at astronaut eye level (1.8m above Martian surface)
-      const eyeLevel = new THREE.Vector3(astronautPos[0], astronautPos[1] + 1.2, astronautPos[2]);
+      // Astronaut head position (1.8m above ground)
+      const eyeLevel = new THREE.Vector3(astronautPos[0], astronautPos[1] + 1.4, astronautPos[2]);
       camera.position.lerp(eyeLevel, 0.15);
 
-      // Determine look-ahead target along path
       const totalWps = route.waypoints.length;
       const nextIndex = Math.min(
         Math.floor((progressPercent / 100) * (totalWps - 1)) + 1,
@@ -184,8 +176,7 @@ function CameraRig({ isFirstPerson, astronautPos, route, progressPercent }) {
       const lookX = (nextWp[1] - 77.4508) * 800;
       const lookZ = -(nextWp[0] - 18.4447) * 800;
 
-      // Smoothly steer head direction towards upcoming waypoint
-      const lookTarget = new THREE.Vector3(lookX, astronautPos[1] + 1.2, lookZ);
+      const lookTarget = new THREE.Vector3(lookX, astronautPos[1] + 1.4, lookZ);
       camera.lookAt(lookTarget);
     }
   });
@@ -193,7 +184,131 @@ function CameraRig({ isFirstPerson, astronautPos, route, progressPercent }) {
   return null;
 }
 
-// Compact Holographic Waypoint Pins
+// 🇮🇳 Realistic 3D Indian Astronaut Model (ISRO-NASA Gaganyaan/Artemis Spacesuit)
+function IndianAstronautModel({ progressPercent, route, isFirstPerson }) {
+  const groupRef = useRef();
+  const leftLegRef = useRef();
+  const rightLegRef = useRef();
+  const leftArmRef = useRef();
+  const rightArmRef = useRef();
+
+  const pos = useMemo(() => {
+    const totalWps = route.waypoints.length;
+    const index = Math.min(
+      Math.floor((progressPercent / 100) * (totalWps - 1)),
+      totalWps - 1
+    );
+    const wp = route.waypoints[index];
+    const x = (wp[1] - 77.4508) * 800;
+    const z = -(wp[0] - 18.4447) * 800;
+    return [x, 0.0, z];
+  }, [progressPercent, route]);
+
+  // Dynamic walking gait animation
+  useFrame((state) => {
+    if (groupRef.current) {
+      const time = state.clock.getElapsedTime() * 8.0;
+      if (leftLegRef.current && rightLegRef.current) {
+        leftLegRef.current.rotation.x = Math.sin(time) * 0.45;
+        rightLegRef.current.rotation.x = -Math.sin(time) * 0.45;
+      }
+      if (leftArmRef.current && rightArmRef.current) {
+        leftArmRef.current.rotation.x = -Math.sin(time) * 0.4;
+        rightArmRef.current.rotation.x = Math.sin(time) * 0.4;
+      }
+    }
+  });
+
+  if (isFirstPerson) return null; // Inside the helmet in POV mode
+
+  return (
+    <group ref={groupRef} position={pos}>
+      {/* 1. Torso / White Pressurized Extravehicular Suit */}
+      <mesh position={[0, 1.45, 0]}>
+        <cylinderGeometry args={[0.38, 0.32, 0.85, 16]} />
+        <meshStandardMaterial color="#f8fafc" roughness={0.4} metalness={0.2} />
+      </mesh>
+
+      {/* 2. Primary Life Support System (PLSS Backpack) */}
+      <mesh position={[0, 1.5, -0.32]}>
+        <boxGeometry args={[0.55, 0.75, 0.28]} />
+        <meshStandardMaterial color="#cbd5e1" roughness={0.5} metalness={0.4} />
+      </mesh>
+
+      {/* 3. 🇮🇳 Indian Tricolour Shoulder Mission Patch */}
+      <mesh position={[0.4, 1.65, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[0.18, 0.12]} />
+        <meshBasicMaterial color="#ff9933" /> {/* Saffron */}
+      </mesh>
+      <mesh position={[0.401, 1.59, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[0.18, 0.04]} />
+        <meshBasicMaterial color="#138808" /> {/* Green */}
+      </mesh>
+
+      {/* 4. Helmet & Gold-Coated Thermal Visor */}
+      <group position={[0, 2.1, 0]}>
+        {/* Outer White Helmet Shell */}
+        <mesh>
+          <sphereGeometry args={[0.34, 24, 24]} />
+          <meshStandardMaterial color="#f1f5f9" roughness={0.3} metalness={0.3} />
+        </mesh>
+        {/* Reflective Gold Coated Visor Shield (Filters Mars harsh UV/IR) */}
+        <mesh position={[0, 0.02, 0.16]}>
+          <sphereGeometry args={[0.26, 24, 24, 0, Math.PI * 2, 0, Math.PI / 2]} />
+          <meshStandardMaterial color="#f59e0b" roughness={0.1} metalness={0.95} emissive="#d97706" emissiveIntensity={0.3} />
+        </mesh>
+      </group>
+
+      {/* 5. Articulated Legs */}
+      <group ref={leftLegRef} position={[-0.18, 1.05, 0]}>
+        <mesh position={[0, -0.5, 0]}>
+          <cylinderGeometry args={[0.14, 0.12, 1.0, 12]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.6} />
+        </mesh>
+        {/* Boot */}
+        <mesh position={[0, -1.02, 0.08]}>
+          <boxGeometry args={[0.18, 0.16, 0.32]} />
+          <meshStandardMaterial color="#334155" roughness={0.8} />
+        </mesh>
+      </group>
+
+      <group ref={rightLegRef} position={[0.18, 1.05, 0]}>
+        <mesh position={[0, -0.5, 0]}>
+          <cylinderGeometry args={[0.14, 0.12, 1.0, 12]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.6} />
+        </mesh>
+        <mesh position={[0, -1.02, 0.08]}>
+          <boxGeometry args={[0.18, 0.16, 0.32]} />
+          <meshStandardMaterial color="#334155" roughness={0.8} />
+        </mesh>
+      </group>
+
+      {/* 6. Articulated Arms */}
+      <group ref={leftArmRef} position={[-0.42, 1.7, 0]}>
+        <mesh position={[0, -0.35, 0]}>
+          <cylinderGeometry args={[0.11, 0.1, 0.75, 12]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.5} />
+        </mesh>
+      </group>
+      <group ref={rightArmRef} position={[0.42, 1.7, 0]}>
+        <mesh position={[0, -0.35, 0]}>
+          <cylinderGeometry args={[0.11, 0.1, 0.75, 12]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.5} />
+        </mesh>
+      </group>
+
+      {/* Interactive Floating Nameplate */}
+      <Html distanceFactor={30} position={[0, 2.7, 0]} center>
+        <div className="bg-slate-950/95 text-cyan-300 border border-cyan-400 px-2.5 py-0.5 rounded text-[10px] font-mono whitespace-nowrap shadow-2xl font-bold flex items-center gap-1.5 backdrop-blur pointer-events-none glow-cyan">
+          <span className="text-xs">🇮🇳</span>
+          <span>ASTRONAUT: SHASWAT SINHA (ISRO-NASA)</span>
+        </div>
+      </Html>
+    </group>
+  );
+}
+
+// Hologram Waypoints
 function HologramWaypointPin({ position, label, subtext, color, onClick, showLabels }) {
   const [hovered, setHovered] = useState(false);
 
@@ -266,53 +381,6 @@ function Route3DLine({ route }) {
   );
 }
 
-// 3D Astronaut Avatar
-function AstronautAvatar({ progressPercent, route, isFirstPerson }) {
-  const avatarRef = useRef();
-
-  const pos = useMemo(() => {
-    const totalWps = route.waypoints.length;
-    const index = Math.min(
-      Math.floor((progressPercent / 100) * (totalWps - 1)),
-      totalWps - 1
-    );
-    const wp = route.waypoints[index];
-    const x = (wp[1] - 77.4508) * 800;
-    const z = -(wp[0] - 18.4447) * 800;
-    return [x, 2.0, z];
-  }, [progressPercent, route]);
-
-  useFrame(() => {
-    if (avatarRef.current) {
-      avatarRef.current.rotation.y += 0.03;
-    }
-  });
-
-  // Hide 3D body if inside first-person helmet view
-  if (isFirstPerson) return null;
-
-  return (
-    <group position={pos}>
-      <Float speed={3.5} rotationIntensity={0.2} floatIntensity={0.4}>
-        <mesh ref={avatarRef} position={[0, 0.4, 0]}>
-          <dodecahedronGeometry args={[1.0, 0]} />
-          <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={1.4} />
-        </mesh>
-        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -1.0, 0]}>
-          <ringGeometry args={[1.4, 1.9, 32]} />
-          <meshBasicMaterial color="#00f0ff" transparent opacity={0.7} side={THREE.DoubleSide} />
-        </mesh>
-      </Float>
-      <Html distanceFactor={30} position={[0, 3.4, 0]} center>
-        <div className="bg-slate-950/95 text-cyan-300 border border-cyan-400 px-2 py-0.5 rounded text-[10px] font-mono whitespace-nowrap shadow-2xl font-bold flex items-center gap-1 backdrop-blur pointer-events-none glow-cyan">
-          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
-          ASTRONAUT: SHASWAT
-        </div>
-      </Html>
-    </group>
-  );
-}
-
 export function Mars3DView({
   activeLayers,
   activeRoute,
@@ -324,7 +392,6 @@ export function Mars3DView({
   showLabels = true,
   isFirstPerson = false
 }) {
-  // Compute current astronaut coordinates
   const astronautCurrentPos = useMemo(() => {
     const totalWps = activeRoute.waypoints.length;
     const index = Math.min(
@@ -334,7 +401,7 @@ export function Mars3DView({
     const wp = activeRoute.waypoints[index];
     const x = (wp[1] - 77.4508) * 800;
     const z = -(wp[0] - 18.4447) * 800;
-    return [x, 2.0, z];
+    return [x, 0.0, z];
   }, [simulationProgress, activeRoute]);
 
   return (
@@ -355,7 +422,7 @@ export function Mars3DView({
         />
         <directionalLight position={[-45, -20, -45]} intensity={0.5} color="#c24810" />
 
-        {/* Camera Rig (Handles Orbit vs Visor Mode) */}
+        {/* Camera Rig (Visor vs Orbit) */}
         <CameraRig
           isFirstPerson={isFirstPerson}
           astronautPos={astronautCurrentPos}
@@ -370,7 +437,7 @@ export function Mars3DView({
           dustStorm={dustStorm}
         />
 
-        {/* Base Hab Station Pin */}
+        {/* Hab Base */}
         <HologramWaypointPin
           position={[0, 0, 0]}
           label="HAB ALPHA"
@@ -397,8 +464,8 @@ export function Mars3DView({
           );
         })}
 
-        {/* Astronaut Avatar */}
-        <AstronautAvatar
+        {/* Realistic 3D Indian Astronaut Model */}
+        <IndianAstronautModel
           progressPercent={simulationProgress}
           route={activeRoute}
           isFirstPerson={isFirstPerson}
@@ -407,7 +474,6 @@ export function Mars3DView({
         {/* 3D Route Line */}
         <Route3DLine route={activeRoute} />
 
-        {/* OrbitControls disabled during First-Person mode to keep camera locked in helmet */}
         {!isFirstPerson && (
           <OrbitControls
             enableDamping
@@ -419,52 +485,61 @@ export function Mars3DView({
         )}
       </Canvas>
 
-      {/* ======================================================= */}
-      {/* 🥽 FIRST-PERSON ASTRONAUT HELMET VISOR HUD OVERLAY     */}
-      {/* ======================================================= */}
+      {/* ================================================================ */}
+      {/* 🥽 FIRST-PERSON INDIAN ASTRONAUT GOLD-COATED HELMET VISOR HUD    */}
+      {/* ================================================================ */}
       {isFirstPerson && (
         <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-6">
-          {/* Curved Visor Vignette / Glass Reflection */}
+          {/* Gold Visor Optical UV-Shielding Tint + Curved Glass Vignette */}
           <div
             className="absolute inset-0 pointer-events-none"
             style={{
-              boxShadow: 'inset 0 0 100px rgba(0, 240, 255, 0.25), inset 0 0 40px rgba(0, 0, 0, 0.85)',
-              background: 'radial-gradient(ellipse at center, transparent 65%, rgba(0, 240, 255, 0.08) 100%)'
+              boxShadow: 'inset 0 0 120px rgba(245, 158, 11, 0.35), inset 0 0 50px rgba(0, 0, 0, 0.9)',
+              background: 'radial-gradient(ellipse at center, transparent 60%, rgba(245, 158, 11, 0.12) 100%)',
+              backdropFilter: 'contrast(1.08) brightness(0.96)'
             }}
           />
 
-          {/* Top Visor Telemetry Ribbon */}
+          {/* Top Visor Telemetry Ribbon with ISRO-NASA & Indian Flag */}
           <div className="relative flex items-center justify-between font-mono text-xs">
-            <div className="bg-slate-950/80 backdrop-blur border border-cyan-500/40 px-3 py-1.5 rounded-lg text-cyan-300 flex items-center gap-2">
-              <Compass className="w-4 h-4 text-cyan-400 animate-spin" style={{ animationDuration: '10s' }} />
-              <span>VISOR HEADING: 284° WNW // TILT: 0.0°</span>
+            <div className="hud-glass px-3.5 py-1.5 rounded-xl text-amber-300 flex items-center gap-2 border-amber-500/40 shadow-xl">
+              <span className="text-sm">🇮🇳</span>
+              <Compass className="w-4 h-4 text-amber-400 animate-spin" style={{ animationDuration: '10s' }} />
+              <span className="font-bold">ISRO-NASA GAGANYAAN-MARS // VISOR HEADING: 284° WNW</span>
             </div>
-            <div className="bg-slate-950/80 backdrop-blur border border-cyan-500/40 px-3 py-1.5 rounded-lg text-emerald-400 font-bold">
-              SUIT LIFE SUPPORT: 100% NOMINAL
-            </div>
-          </div>
-
-          {/* Center Targeting Reticle */}
-          <div className="relative flex items-center justify-center">
-            <div className="w-16 h-16 rounded-full border border-cyan-400/40 flex items-center justify-center">
-              <div className="w-1 h-1 bg-cyan-400 rounded-full" />
-              <div className="absolute top-0 w-2 h-0.5 bg-cyan-400" />
-              <div className="absolute bottom-0 w-2 h-0.5 bg-cyan-400" />
-              <div className="absolute left-0 w-0.5 h-2 bg-cyan-400" />
-              <div className="absolute right-0 w-0.5 h-2 bg-cyan-400" />
+            <div className="hud-glass px-3.5 py-1.5 rounded-xl text-emerald-400 font-bold border-emerald-500/40">
+              LIFE SUPPORT: 100% NOMINAL // CO₂: 0.04%
             </div>
           </div>
 
-          {/* Bottom Footstep Telemetry */}
+          {/* Center Tactical Targeting Reticle with Mineral Spectral Scanner */}
+          <div className="relative flex flex-col items-center justify-center">
+            <div className="w-20 h-20 rounded-full border border-amber-400/50 flex items-center justify-center relative shadow-[0_0_15px_rgba(245,158,11,0.3)]">
+              <div className="w-1.5 h-1.5 bg-amber-400 rounded-full animate-ping" />
+              <div className="absolute top-0 w-3 h-0.5 bg-amber-400" />
+              <div className="absolute bottom-0 w-3 h-0.5 bg-amber-400" />
+              <div className="absolute left-0 w-0.5 h-3 bg-amber-400" />
+              <div className="absolute right-0 w-0.5 h-3 bg-amber-400" />
+            </div>
+            <div className="mt-2 text-[10px] font-mono text-amber-300 bg-slate-950/80 px-2.5 py-0.5 rounded border border-amber-500/40">
+              VISOR HUD // SCANNING TERRAIN FACIES
+            </div>
+          </div>
+
+          {/* Bottom Footstep & Traction Telemetry */}
           <div className="relative flex justify-center">
-            <div className="bg-slate-950/80 backdrop-blur border border-cyan-500/40 px-4 py-1.5 rounded-xl text-xs font-mono text-cyan-300">
-              GROUND CLEARANCE: 1.8M // TERRAIN FRICTION COEFF: 0.68
+            <div className="hud-glass px-4 py-1.5 rounded-xl text-xs font-mono text-amber-300 border-amber-500/40 flex items-center gap-3">
+              <span>BOOT ELEVATION: 1.8M MOLA</span>
+              <span>•</span>
+              <span>TRACTION FRICTION: 0.72 (NOMINAL)</span>
+              <span>•</span>
+              <span>SUIT TEMP: +21.4°C</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Line-of-Sight Comms Shadow Warning */}
+      {/* Comms Shadow Alert */}
       {activeRoute.hasCommsShadow && (
         <div className="absolute top-20 left-1/2 transform -translate-x-1/2 z-20 bg-rose-950/90 border border-rose-500/80 px-4 py-2 rounded-xl text-rose-300 font-mono text-xs flex items-center gap-2.5 shadow-[0_0_25px_rgba(244,63,94,0.6)] animate-pulse backdrop-blur-md">
           <AlertTriangle className="w-4 h-4 text-rose-400" />
