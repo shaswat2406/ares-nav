@@ -36,8 +36,9 @@ function MartianAtmosphere({ dustStorm }) {
   );
 }
 
-// Full 3D Jezero Terrain with dynamic vertex shader coloring for NASA Layers
-function DynamicShadedTerrain({ activeLayers, onTerrainClick, dustStorm }) {
+// Cinematic Photorealistic Martian Surface Terrain
+// Natural Mars regolith colors with subtle, high-contrast overlay highlights when sensors are ON
+function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
   const meshRef = useRef();
 
   const { geometry, texture } = useMemo(() => {
@@ -48,9 +49,6 @@ function DynamicShadedTerrain({ activeLayers, onTerrainClick, dustStorm }) {
 
     const pos = geom.attributes.position;
     const colors = new Float32Array(pos.count * 3);
-
-    // Track elevations and slope
-    const elevations = new Float32Array(pos.count);
 
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
@@ -100,66 +98,91 @@ function DynamicShadedTerrain({ activeLayers, onTerrainClick, dustStorm }) {
       height += Math.sin(x * 1.8 + z * 1.2) * 0.15;
 
       pos.setY(i, height);
-      elevations[i] = height;
     }
 
     geom.computeVertexNormals();
     const normals = geom.attributes.normal;
 
-    // Dynamic Vertex Colors calculation
+    // Authentic Mars Palette: Ochre, rust, deep terracotta, basalt shadows
+    // (NO bright rainbow colors!)
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const z = pos.getZ(i);
-      const ny = normals.getY(i); // Dot product with up-vector [0, 1, 0] gives slope!
+      const y = pos.getY(i);
+      const ny = normals.getY(i);
       const slopeDeg = Math.acos(Math.min(1.0, Math.max(0.0, ny))) * (180 / Math.PI);
 
-      let r = 0.65;
-      let g = 0.28;
-      let b = 0.12;
+      // Base: Natural Mars Iron-Oxide Regolith with geological elevation variation
+      let r = 0.72 + (y * 0.02);
+      let g = 0.31 + (y * 0.01);
+      let b = 0.14;
 
-      // Layer 1: Slope Hazard (>15 deg marked in glowing crimson)
+      // Dark basaltic soil in canyon bed and crater base
+      if (y < -2.0) {
+        r *= 0.75;
+        g *= 0.65;
+        b *= 0.60;
+      }
+
+      // Silt/clay delta deposits (natural dusty desert tan)
+      if (x < -10 && x > -50 && Math.abs(z) < 30) {
+        r = 0.78;
+        g = 0.42;
+        b = 0.22;
+      }
+
+      // Layer 1: Slope Hazard Warning (Only highlighted if user toggles Hazard Layer ON)
+      // Subtle glowing crimson rim tint on impassable slopes (>15 deg)
       if (activeLayers.hazards && slopeDeg > 15.0) {
-        r = 0.95;
-        g = 0.10;
-        b = 0.15;
-      }
-      // Layer 2: CRISM Mineralogy (Smectite Clays & Carbonates in delta & Kodiak)
-      else if (activeLayers.mineralogy && ((x < -12 && x > -45 && Math.abs(z) < 25) || (Math.sqrt((x - 14)**2 + (z - 22)**2) < 6.0))) {
-        r = 0.75;
-        g = 0.25;
-        b = 0.95; // Glowing purple/magenta spectral signature
-      }
-      // Layer 3: Safe traversable plains in subtle emerald/cyan
-      else if (activeLayers.hazards && slopeDeg < 8.0) {
-        r = 0.15;
-        g = 0.65;
-        b = 0.45;
+        r = Math.min(1.0, r * 1.4 + 0.3);
+        g *= 0.3;
+        b *= 0.2;
       }
 
-      colors[i * 3] = r;
-      colors[i * 3 + 1] = g;
-      colors[i * 3 + 2] = b;
+      // Layer 2: CRISM Spectral Mineralogy (Targeted, tasteful violet-tinted accent, NOT rainbow)
+      if (activeLayers.mineralogy && ((x < -15 && x > -35 && Math.abs(z) < 18) || (Math.sqrt((x - 14)**2 + (z - 22)**2) < 5.0))) {
+        r = 0.58;
+        g = 0.28;
+        b = 0.62;
+      }
+
+      colors[i * 3] = Math.min(1.0, Math.max(0.0, r));
+      colors[i * 3 + 1] = Math.min(1.0, Math.max(0.0, g));
+      colors[i * 3 + 2] = Math.min(1.0, Math.max(0.0, b));
     }
 
     geom.setAttribute('color', new THREE.BufferAttribute(colors, 3));
 
-    // High-Res Martian Regolith Base Texture
+    // High-Resolution 2048px Photorealistic Mars Surface Texture
     const canvas = document.createElement('canvas');
-    canvas.width = 1024;
-    canvas.height = 1024;
+    canvas.width = 2048;
+    canvas.height = 2048;
     const ctx = canvas.getContext('2d');
-    const grad = ctx.createRadialGradient(512, 512, 30, 512, 512, 600);
-    grad.addColorStop(0, '#c75114');
-    grad.addColorStop(0.5, '#8c2d08');
-    grad.addColorStop(1, '#3b1102');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, 1024, 1024);
 
-    for (let i = 0; i < 15000; i++) {
-      const px = Math.random() * 1024;
-      const py = Math.random() * 1024;
-      ctx.fillStyle = Math.random() > 0.6 ? 'rgba(255, 210, 160, 0.2)' : 'rgba(20, 5, 2, 0.25)';
-      ctx.fillRect(px, py, 2, 2);
+    // Rich Mars regolith gradient
+    const grad = ctx.createRadialGradient(1024, 1024, 80, 1024, 1024, 1300);
+    grad.addColorStop(0.0, '#a53c12'); // Rich Mars rust
+    grad.addColorStop(0.35, '#c55219'); // Terracotta plains
+    grad.addColorStop(0.70, '#782709'); // Dark volcanic basalt
+    grad.addColorStop(1.0, '#381003'); // Deep crater boundary
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 2048, 2048);
+
+    // Delta sedimentation channel
+    ctx.fillStyle = 'rgba(215, 145, 95, 0.35)';
+    ctx.beginPath();
+    ctx.arc(600, 1024, 450, 0, Math.PI * 2);
+    ctx.fill();
+
+    // High density sand ripples & fine rock ejecta
+    for (let i = 0; i < 30000; i++) {
+      const px = Math.random() * 2048;
+      const py = Math.random() * 2048;
+      const sz = Math.random() * 2.5;
+      ctx.fillStyle = Math.random() > 0.55 
+        ? 'rgba(255, 200, 150, 0.22)' 
+        : 'rgba(25, 8, 2, 0.32)';
+      ctx.fillRect(px, py, sz, sz);
     }
 
     const tex = new THREE.CanvasTexture(canvas);
@@ -178,8 +201,8 @@ function DynamicShadedTerrain({ activeLayers, onTerrainClick, dustStorm }) {
     <mesh ref={meshRef} geometry={geometry} onClick={handleClick} receiveShadow castShadow>
       <meshStandardMaterial
         vertexColors
-        roughness={dustStorm ? 0.95 : 0.82}
-        metalness={0.15}
+        roughness={dustStorm ? 0.95 : 0.84}
+        metalness={0.12}
         wireframe={activeLayers.topography}
       />
     </mesh>
@@ -234,7 +257,7 @@ function HologramWaypointPin({ position, label, subtext, color, onClick, showLab
   );
 }
 
-// 3D Path with Line-of-Sight Occlusion Warning
+// 3D Route Line
 function Route3DLine({ route }) {
   const points = useMemo(() => {
     return route.waypoints.map(wp => {
@@ -317,17 +340,17 @@ export function Mars3DView({ activeLayers, activeRoute, onSelectTarget, onTerrai
       >
         <MartianAtmosphere dustStorm={dustStorm} />
 
-        <ambientLight intensity={dustStorm ? 0.3 : 0.5} />
+        <ambientLight intensity={dustStorm ? 0.3 : 0.55} />
         <directionalLight
           position={[60, 75, 45]}
-          intensity={dustStorm ? 1.4 : 2.6}
+          intensity={dustStorm ? 1.4 : 2.8}
           color={dustStorm ? "#ea580c" : "#ffffff"}
           castShadow
         />
         <directionalLight position={[-45, -20, -45]} intensity={0.5} color="#c24810" />
 
-        {/* Dynamic Shader Terrain with Real-Time NASA Layer Coloring */}
-        <DynamicShadedTerrain
+        {/* Photorealistic Mars Terrain with No Rainbow Glare */}
+        <PhotorealMartianTerrain
           activeLayers={activeLayers}
           onTerrainClick={onTerrainClick}
           dustStorm={dustStorm}
