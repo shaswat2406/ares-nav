@@ -1,24 +1,28 @@
 import React, { useState } from 'react';
 import { MarsMapView } from './components/MarsMapView';
 import { Mars3DView } from './components/Mars3DView';
+import { GoogleMarsEarthView } from './components/GoogleMarsEarthView';
 import { EVAStatusHUD } from './components/EVAStatusHUD';
 import { ScienceInspector } from './components/ScienceInspector';
 import { ElevationProfile } from './components/ElevationProfile';
 import { EVASimulator } from './components/EVASimulator';
 import { MissionExportModal } from './components/MissionExportModal';
+import { AstrobiologyLabModal } from './components/AstrobiologyLabModal';
 import { PRECOMPUTED_ROUTES, SCIENCE_TARGETS } from './data/jezeroData';
 import { computeCustomAStarRoute } from './utils/astarEngine';
 import { sfx } from './utils/soundFX';
-import { Rocket, ShieldAlert, Navigation, Layers, Box, Map as MapIcon, Crosshair, FileDown, Radio, Target, Activity } from 'lucide-react';
+import { Rocket, ShieldAlert, Navigation, Layers, Box, Map as MapIcon, Crosshair, FileDown, Radio, Target, Activity, Globe, Microscope } from 'lucide-react';
 
 function App() {
-  const [viewMode, setViewMode] = useState('3d');
+  const [viewMode, setViewMode] = useState('globe'); // 'globe', '3d', or '2d'
+  const [activeSite, setActiveSite] = useState('jezero'); // 'jezero', 'gale', or 'olympus'
   const [routeType, setRouteType] = useState('safe');
   const [customRoute, setCustomRoute] = useState(null);
   const [customTarget, setCustomTarget] = useState(null);
   const [selectedTarget, setSelectedTarget] = useState(SCIENCE_TARGETS[1]);
   const [simulationProgress, setSimulationProgress] = useState(0);
   const [isExportOpen, setIsExportOpen] = useState(false);
+  const [isLabOpen, setIsLabOpen] = useState(false);
   const [activeLayers, setActiveLayers] = useState({
     topography: true,
     mineralogy: true,
@@ -55,6 +59,12 @@ function App() {
     sfx.scienceSuccess();
   };
 
+  const handleSiteSelect = (siteId) => {
+    sfx.click();
+    setActiveSite(siteId);
+    setViewMode('3d'); // Fly from space globe straight into the 3D surface!
+  };
+
   return (
     <div className="min-h-screen bg-[#02040a] text-slate-100 flex flex-col selection:bg-cyan-500 selection:text-black">
       {/* Top Aerospace Mil-Spec Command Navigation */}
@@ -67,7 +77,7 @@ function App() {
             <div>
               <div className="flex items-center gap-2.5">
                 <h1 className="font-heading font-extrabold text-base md:text-lg tracking-widest text-slate-100 uppercase">
-                  ARES-NAV <span className="text-cyan-400 text-[11px] font-mono px-2 py-0.5 rounded border border-cyan-500/50 bg-cyan-950/40 font-bold hud-glow-cyan">EVA HUD // v2.4</span>
+                  ARES-NAV <span className="text-cyan-400 text-[11px] font-mono px-2 py-0.5 rounded border border-cyan-500/50 bg-cyan-950/40 font-bold hud-glow-cyan">PLANETARY TWIN // v3.0</span>
                 </h1>
                 <span className="text-[10px] bg-slate-950 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1.5 shadow-[0_0_10px_rgba(0,255,136,0.2)]">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
@@ -75,15 +85,26 @@ function App() {
                 </span>
               </div>
               <p className="text-[11px] font-mono text-slate-400 tracking-wider">
-                NASA SPACE APPS CHALLENGE // INTERPLANETARY SURVIVAL: MARTIAN MAP
+                NASA SPACE APPS CHALLENGE // INTERPLANETARY SURVIVAL GUIDE: MARTIAN MAP
               </p>
             </div>
           </div>
 
           {/* Tactical Controls & Mode Switches */}
           <div className="flex flex-wrap items-center gap-2.5">
-            {/* Viewport Dimension Toggle */}
+            {/* Viewport Dimension Switcher */}
             <div className="flex items-center bg-slate-950/90 border border-cyan-500/30 p-1 rounded-lg">
+              <button
+                onClick={() => handleViewSwitch('globe')}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
+                  viewMode === 'globe'
+                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-slate-950 shadow-[0_0_15px_rgba(249,115,22,0.4)]'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                <Globe className="w-3.5 h-3.5" />
+                MARS 3D GLOBE
+              </button>
               <button
                 onClick={() => handleViewSwitch('3d')}
                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-mono font-bold transition-all cursor-pointer ${
@@ -93,7 +114,7 @@ function App() {
                 }`}
               >
                 <Box className="w-3.5 h-3.5" />
-                3D ORBIT VIEW
+                SURFACE CANYON
               </button>
               <button
                 onClick={() => handleViewSwitch('2d')}
@@ -119,7 +140,7 @@ function App() {
                 }`}
               >
                 <Navigation className="w-3.5 h-3.5" />
-                A* SAFE PATH
+                A* SAFE
               </button>
               <button
                 onClick={() => handleRouteSwitch('direct')}
@@ -130,7 +151,7 @@ function App() {
                 }`}
               >
                 <ShieldAlert className="w-3.5 h-3.5" />
-                DIRECT LINE (HAZARD)
+                HAZARD DIRECT
               </button>
               {customRoute && (
                 <button
@@ -146,6 +167,18 @@ function App() {
                 </button>
               )}
             </div>
+
+            {/* Astrobiology Lab Button */}
+            <button
+              onClick={() => {
+                sfx.click();
+                setIsLabOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-xs font-mono font-bold bg-purple-950/60 border border-purple-500/50 text-purple-300 hover:bg-purple-900/60 transition-all cursor-pointer shadow-[0_0_15px_rgba(168,85,247,0.3)]"
+            >
+              <Microscope className="w-3.5 h-3.5 text-purple-400" />
+              ASTROBIOLOGY LAB
+            </button>
 
             {/* Export Dispatch Order */}
             <button
@@ -164,14 +197,16 @@ function App() {
 
       {/* Main Tactical Grid Layout */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Col (8 Cols): 3D Viewport + Profile Chart */}
+        {/* Left Col (8 Cols): 3D Globe / Surface Canyon / 2D Map */}
         <div className="lg:col-span-8 flex flex-col space-y-4">
           {/* Target Region Tactical Strip */}
           <div className="hud-panel rounded-lg px-4 py-2.5 flex items-center justify-between border-cyan-500/20 text-xs font-mono">
             <div className="flex items-center space-x-2">
               <Layers className="w-4 h-4 text-cyan-400" />
-              <span className="text-slate-400">SECTOR:</span>
-              <span className="font-heading text-cyan-300 font-bold tracking-wider">JEZERO CRATER RIVER DELTA</span>
+              <span className="text-slate-400">ACTIVE REGION:</span>
+              <span className="font-heading text-cyan-300 font-bold tracking-wider uppercase">
+                {activeSite === 'jezero' ? 'JEZERO CRATER ANCIENT DELTA' : activeSite === 'gale' ? 'GALE CRATER (MOUNT SHARP)' : 'OLYMPUS MONS VOLCANO'}
+              </span>
             </div>
             <div className="flex items-center space-x-4 text-slate-400">
               <span className="flex items-center gap-1.5">
@@ -186,9 +221,14 @@ function App() {
             </div>
           </div>
 
-          {/* Interactive 3D / 2D Canvas */}
+          {/* Interactive Dynamic Viewport */}
           <div className="flex-1 relative">
-            {viewMode === '3d' ? (
+            {viewMode === 'globe' ? (
+              <GoogleMarsEarthView
+                onSiteSelect={handleSiteSelect}
+                activeSite={activeSite}
+              />
+            ) : viewMode === '3d' ? (
               <Mars3DView
                 activeLayers={activeLayers}
                 activeRoute={activeRoute}
@@ -241,6 +281,13 @@ function App() {
           />
         </div>
       </main>
+
+      {/* Astrobiology Raman Lab Modal */}
+      <AstrobiologyLabModal
+        isOpen={isLabOpen}
+        onClose={() => setIsLabOpen(false)}
+        selectedTarget={selectedTarget}
+      />
 
       {/* Mission Export Plan Modal */}
       <MissionExportModal
