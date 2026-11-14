@@ -1,7 +1,25 @@
-import React from 'react';
-import { Microscope, Camera, Crosshair, Award, MapPin, X } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Microscope, Camera, Crosshair, Award, MapPin, X, Globe, Radio } from 'lucide-react';
+import { fetchLivePerseverancePhotos } from '../utils/nasaApi';
 
 export const ScienceInspector = ({ target, onClose }) => {
+  const [livePhotos, setLivePhotos] = useState(null);
+  const [isLoadingPhotos, setIsLoadingPhotos] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    async function loadNASAData() {
+      setIsLoadingPhotos(true);
+      const photos = await fetchLivePerseverancePhotos();
+      if (isMounted) {
+        setLivePhotos(photos);
+        setIsLoadingPhotos(false);
+      }
+    }
+    loadNASAData();
+    return () => { isMounted = false; };
+  }, [target]);
+
   if (!target) {
     return (
       <div className="bg-slate-900/80 border border-slate-800 rounded-xl p-4 text-center text-slate-500 font-mono text-xs flex flex-col items-center justify-center min-h-[220px]">
@@ -10,6 +28,8 @@ export const ScienceInspector = ({ target, onClose }) => {
       </div>
     );
   }
+
+  const primaryPhoto = (livePhotos && livePhotos.length > 0) ? livePhotos[0].img_src : target.image;
 
   return (
     <div className="bg-slate-900/90 backdrop-blur-md border border-purple-500/30 rounded-xl overflow-hidden shadow-2xl space-y-3">
@@ -23,24 +43,25 @@ export const ScienceInspector = ({ target, onClose }) => {
         </div>
         <button 
           onClick={onClose}
-          className="text-slate-400 hover:text-white p-1 rounded-md transition-colors"
+          className="text-slate-400 hover:text-white p-1 rounded-md transition-colors cursor-pointer"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       <div className="p-4 space-y-4">
-        {/* Ground POV Camera View */}
+        {/* Ground POV Camera View with Live NASA Badge */}
         <div className="relative rounded-lg overflow-hidden border border-slate-800 group">
           <img 
-            src={target.image} 
+            src={primaryPhoto} 
             alt={target.name} 
             className="w-full h-44 object-cover transition-transform duration-500 group-hover:scale-105"
           />
-          <div className="absolute top-2 left-2 bg-black/70 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-cyan-300 flex items-center gap-1">
-            <Camera className="w-3 h-3 text-cyan-400" /> POV: Mastcam-Z Surface Ground Feed
+          <div className="absolute top-2 left-2 bg-black/80 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-cyan-300 flex items-center gap-1.5 border border-cyan-500/30">
+            <Radio className="w-3 h-3 text-emerald-400 animate-pulse" /> 
+            <span>NASA OPEN API LIVE TELEMETRY</span>
           </div>
-          <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-purple-300">
+          <div className="absolute bottom-2 right-2 bg-black/75 backdrop-blur px-2 py-0.5 rounded text-[10px] font-mono text-purple-300">
             Elev: {target.elevation}m
           </div>
         </div>
@@ -68,7 +89,7 @@ export const ScienceInspector = ({ target, onClose }) => {
         {/* Biosignature Confidence Bar */}
         <div className="space-y-1">
           <div className="flex justify-between text-xs font-mono">
-            <span className="text-slate-400">Astrobiology Potential:</span>
+            <span className="text-slate-400">Astrobiology Preservation Potential:</span>
             <span className="text-purple-400 font-bold">{target.biosignaturePotential}</span>
           </div>
           <div className="w-full bg-slate-800 rounded-full h-2 overflow-hidden">
