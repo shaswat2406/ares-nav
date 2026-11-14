@@ -413,8 +413,8 @@ export function GoogleMarsEarthView({ onSiteSelect, activeSite }) {
         />
       </Canvas>
 
-      {/* ── Top Left: Global Title & Stats ── */}
-      <div className="absolute top-4 left-4 z-20 space-y-2 pointer-events-auto">
+      {/* ── Top Left: Global Title & Stats (Offset to clear main header) ── */}
+      <div className="absolute top-32 sm:top-24 md:top-20 left-4 z-20 space-y-2 pointer-events-auto">
         <div className="hud-glass rounded-xl px-4 py-2 border-cyan-500/40 flex items-center gap-2.5 shadow-2xl">
           <Globe className="w-4 h-4 text-cyan-400 animate-spin" style={{ animationDuration: '16s' }} />
           <div>
@@ -449,7 +449,7 @@ export function GoogleMarsEarthView({ onSiteSelect, activeSite }) {
       </div>
 
       {/* ── Top Right: Category Filters & Globe Controls ── */}
-      <div className="absolute top-4 right-4 z-20 space-y-2 pointer-events-auto flex flex-col items-end">
+      <div className="absolute top-32 sm:top-24 md:top-20 right-4 z-20 space-y-2 pointer-events-auto flex flex-col items-end">
         {/* Category Pills */}
         <div className="hud-glass rounded-xl p-1.5 border-cyan-500/30 flex items-center gap-1 shadow-xl">
           {SITE_CATEGORIES.map((cat) => (

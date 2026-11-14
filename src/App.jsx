@@ -204,18 +204,20 @@ function App() {
 
         {/* Top-Right Mission Tools & Navigation */}
         <div className="flex flex-wrap items-center gap-1.5 pointer-events-auto">
-          {/* 🥽 FIRST-PERSON VISOR POV TOGGLE BUTTON */}
-          <button
-            onClick={toggleFirstPerson}
-            className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all border ${
-              isFirstPerson
-                ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.7)] animate-pulse'
-                : 'hud-glass text-cyan-300 border-cyan-500/40 hover:border-cyan-300'
-            }`}
-          >
-            <User className="w-3.5 h-3.5" />
-            {isFirstPerson ? '🥽 VISOR POV: ACTIVE' : 'SWITCH TO VISOR POV'}
-          </button>
+          {/* 🥽 FIRST-PERSON VISOR POV TOGGLE BUTTON (Only for 3D Canyon View) */}
+          {viewMode === 'surface3d' && (
+            <button
+              onClick={toggleFirstPerson}
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all border ${
+                isFirstPerson
+                  ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.7)] animate-pulse'
+                  : 'hud-glass text-cyan-300 border-cyan-500/40 hover:border-cyan-300'
+              }`}
+            >
+              <User className="w-3.5 h-3.5" />
+              {isFirstPerson ? '🥽 VISOR POV: ACTIVE' : 'SWITCH TO VISOR POV'}
+            </button>
+          )}
 
           {/* Mode Switcher */}
           <div className="hud-glass rounded-xl p-1 flex items-center border-cyan-500/30">
