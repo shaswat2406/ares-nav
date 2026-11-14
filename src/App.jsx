@@ -15,6 +15,7 @@ import { RouteComparison } from './components/RouteComparison';
 import { MissionSimulator } from './components/MissionSimulator';
 import { ScienceTargetPanel } from './components/ScienceTargetPanel';
 import { DataExplorer } from './components/DataExplorer';
+import { AIMissionCommander } from './components/AIMissionCommander';
 import { PRECOMPUTED_ROUTES, SCIENCE_TARGETS } from './data/jezeroData';
 import { computeCustomAStarRoute } from './utils/astarEngine';
 import { compareAllRoutes } from './utils/pathfindingEngine';
@@ -38,7 +39,8 @@ import {
   Play,
   Sliders,
   Sparkles,
-  BarChart3
+  BarChart3,
+  Bot
 } from 'lucide-react';
 
 function App() {
@@ -82,6 +84,7 @@ function App() {
   const [isMissionSimOpen, setIsMissionSimOpen] = useState(false);
   const [isSciencePanelOpen, setIsSciencePanelOpen] = useState(false);
   const [isDataExplorerOpen, setIsDataExplorerOpen] = useState(false);
+  const [isAIOpen, setIsAIOpen] = useState(false);
 
   // 3D Terrain Overlays
   const [activeLayers, setActiveLayers] = useState({
@@ -259,6 +262,18 @@ function App() {
               3D GLOBE
             </button>
           </div>
+
+          {/* 🤖 AI Mission Commander */}
+          <button
+            onClick={() => {
+              sfx.click();
+              setIsAIOpen(true);
+            }}
+            className="hud-glass px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-indigo-300 hover:text-indigo-100 border-indigo-500/40 flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(99,102,241,0.3)] hover:border-indigo-300 hover:shadow-[0_0_20px_rgba(99,102,241,0.5)] transition-all"
+          >
+            <Bot className="w-3.5 h-3.5 text-indigo-400 animate-pulse" />
+            ASK AI
+          </button>
 
           {/* 🚀 Mission Simulation Demo (Judges Special) */}
           <button
@@ -552,6 +567,25 @@ function App() {
         isOpen={isDataExplorerOpen}
         onClose={() => setIsDataExplorerOpen(false)}
       />
+
+      {/* ============================================================== */}
+      {/* 8. FLOATING AI MISSION COMMANDER PANEL                          */}
+      {/* ============================================================== */}
+      {isAIOpen && (
+        <div className="absolute bottom-24 right-4 z-40">
+          <AIMissionCommander
+            routeType={routeType}
+            activeRoute={activeRoute}
+            evaConfig={evaConfig}
+            evaElapsedSeconds={evaElapsedSeconds}
+            dustStorm={dustStorm}
+            selectedTarget={selectedTarget}
+            viewMode={viewMode}
+            comparedRoutes={comparedRoutes}
+            onClose={() => setIsAIOpen(false)}
+          />
+        </div>
+      )}
     </div>
   );
 }
