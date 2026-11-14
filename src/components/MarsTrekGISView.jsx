@@ -21,10 +21,15 @@ import {
   MapPin,
   Ruler,
   Eye,
-  Radio,
-  Sliders,
-  Sparkles,
-  Maximize2
+  EyeOff,
+  ChevronDown,
+  ChevronUp,
+  RotateCcw,
+  Plus,
+  Minus,
+  X,
+  Play,
+  Check
 } from 'lucide-react';
 
 // Custom icons using Lucide/SVG data URIs
@@ -35,8 +40,8 @@ const createCustomIcon = (bgColor, borderColor, text) => {
       <div style="
         background-color: ${bgColor};
         border: 2px solid ${borderColor};
-        width: 30px;
-        height: 30px;
+        width: 28px;
+        height: 28px;
         border-radius: 50%;
         display: flex;
         align-items: center;
@@ -45,19 +50,18 @@ const createCustomIcon = (bgColor, borderColor, text) => {
         font-weight: bold;
         font-size: 10px;
         color: white;
-        box-shadow: 0 0 14px ${borderColor};
+        box-shadow: 0 0 12px ${borderColor};
       ">
         ${text}
       </div>
     `,
-    iconSize: [30, 30],
-    iconAnchor: [15, 15]
+    iconSize: [28, 28],
+    iconAnchor: [14, 14]
   });
 };
 
 const habIcon = createCustomIcon('#0284c7', '#38bdf8', 'HAB');
 const targetIcon = createCustomIcon('#7c3aed', '#c084fc', 'SCI');
-const roverIcon = createCustomIcon('#ea580c', '#fb923c', 'M20');
 
 // Map Event Listener for Cursor Coordinates & Click Inspector
 function MapEventListener({ onMouseMove, onMapClick, onMapReady }) {
@@ -94,6 +98,12 @@ export function MarsTrekGISView() {
   const [measurePoints, setMeasurePoints] = useState([]);
   const [measureDistance, setMeasureDistance] = useState(null);
 
+  // UI Responsiveness & Collapsible States (uncluttering screen)
+  const [hudVisible, setHudVisible] = useState(true);
+  const [isJumpOpen, setIsJumpOpen] = useState(false);
+  const [isLayersOpen, setIsLayersOpen] = useState(false);
+  const [isMetricsExpanded, setIsMetricsExpanded] = useState(false);
+
   // Layer Visibility
   const [layers, setLayers] = useState({
     mola: true,
@@ -105,7 +115,8 @@ export function MarsTrekGISView() {
     crism: true
   });
 
-  const activeRoute = PRECOMPUTED_ROUTES[activeRouteType];
+  const activeRoute = PRECOMPUTED_ROUTES[activeRouteType] || PRECOMPUTED_ROUTES.safe;
+  // Jezero Crater Center datum
   const centerPos = [HABITAT_BASE.lat, HABITAT_BASE.lng];
 
   // Estimate elevation in Jezero from lat/lng
@@ -113,7 +124,6 @@ export function MarsTrekGISView() {
     const dLat = (lat - 18.4447) * 111000;
     const dLng = (lng - 77.4508) * 111000 * Math.cos((18.4447 * Math.PI) / 180);
     const distM = Math.sqrt(dLat * dLat + dLng * dLng);
-    // Base crater floor -2570m with western delta rise and outer crater rim
     let elev = -2570;
     if (lng < 77.43) elev += (77.43 - lng) * 2200; // Delta rise
     if (distM > 15000) elev += Math.pow((distM - 15000) / 1000, 1.8) * 18; // Rim rise
@@ -148,7 +158,6 @@ export function MarsTrekGISView() {
     }
 
     const elev = estimateElevation(latlng.lat, latlng.lng);
-    // Find closest target
     let closestTarget = SCIENCE_TARGETS[0];
     let minD = 999999;
     SCIENCE_TARGETS.forEach((st) => {
@@ -170,10 +179,24 @@ export function MarsTrekGISView() {
 
   const flyToLocation = (loc) => {
     sfx.click();
+    setIsJumpOpen(false);
     if (leafletMap) {
-      leafletMap.flyTo([loc.lat, loc.lng], loc.zoom, { duration: 1.5 });
-    } else if (mapRef.current?.flyTo) {
-      mapRef.current.flyTo([loc.lat, loc.lng], loc.zoom, { duration: 1.5 });
+      leafletMap.flyTo([loc.lat, loc.lng], loc.zoom || 10, { duration: 1.5 });
+    }
+  };
+
+  const resetToOverview = () => {
+    sfx.click();
+    if (leafletMap) {
+      leafletMap.flyTo([18.4447, 77.4508], 9.5, { duration: 1.2 });
+    }
+  };
+
+  const handleZoom = (delta) => {
+    sfx.click();
+    if (leafletMap) {
+      if (delta > 0) leafletMap.zoomIn();
+      else leafletMap.zoomOut();
     }
   };
 
@@ -200,21 +223,25 @@ export function MarsTrekGISView() {
     return () => clearInterval(interval);
   }, [isSimulating]);
 
-  // Rover traverse polyline coordinates safely normalized for array or object format
+  // Rover traverse polyline coordinates safely normalized
   const roverTraversePositions = ROVER_TRAVERSE.map((p) =>
     Array.isArray(p) ? [p[0], p[1]] : [p.lat, p.lng]
   );
 
+  const activeLayerCount = Object.values(layers).filter(Boolean).length;
+
   return (
     <div className="relative w-full h-full min-h-screen bg-[#040816] text-slate-200 font-mono select-none overflow-hidden flex flex-col">
-      {/* High-Contrast Interactive Planetary GIS Canvas */}
+      {/* ── High-Contrast Interactive Planetary GIS Canvas ── */}
+      {/* Starting at zoom 9.5 gives a stunning wide overview of the entire Jezero Crater basin */}
       <MapContainer
         ref={mapRef}
         center={centerPos}
-        zoom={12}
-        maxZoom={16}
-        minZoom={7}
+        zoom={9.5}
+        maxZoom={15}
+        minZoom={5}
         scrollWheelZoom={true}
+        zoomControl={false}
         className="w-full h-full z-0"
       >
         <MapEventListener onMouseMove={handleMouseMove} onMapClick={handleMapClick} onMapReady={setLeafletMap} />
@@ -225,7 +252,7 @@ export function MarsTrekGISView() {
             attribution='&copy; NASA / JPL / USGS Astrogeology // Mars Trek MOLA'
             url="https://trek.nasa.gov/tiles/Mars/EQ/Mars_MGS_MOLA_ClrShade_merge_global_463m/1.0.0/default/default028mm/{z}/{y}/{x}.jpg"
             maxNativeZoom={7}
-            maxZoom={16}
+            maxZoom={15}
           />
         )}
 
@@ -235,7 +262,7 @@ export function MarsTrekGISView() {
             attribution='&copy; NASA / ASU // THEMIS IR 100m'
             url="https://trek.nasa.gov/tiles/Mars/EQ/Mars_Odyssey_THEMIS_IR_Daytime_100m_v14.0_global/1.0.0/default/default028mm/{z}/{y}/{x}.jpg"
             maxNativeZoom={7}
-            maxZoom={16}
+            maxZoom={15}
             opacity={0.65}
           />
         )}
@@ -376,7 +403,7 @@ export function MarsTrekGISView() {
             positions={activeRoute.waypoints}
             pathOptions={{
               color: activeRouteType === 'safe' ? '#00ff88' : '#ff3344',
-              weight: 5,
+              weight: 4,
               opacity: 0.95,
               dashArray: activeRouteType === 'safe' ? undefined : '8, 8'
             }}
@@ -392,202 +419,338 @@ export function MarsTrekGISView() {
         )}
       </MapContainer>
 
-      {/* Top Left: Title & Quick Navigation */}
-      <div className="absolute top-4 left-4 z-[400] space-y-2 pointer-events-auto">
-        <div className="bg-[#040816]/95 backdrop-blur-md border border-cyan-500/40 px-3.5 py-1.5 rounded-xl text-xs font-mono text-cyan-300 flex items-center gap-2 shadow-2xl">
-          <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
-          <span className="font-heading font-bold tracking-wider">
-            NASA JPL MARS TREK // GIS VIEWER
-          </span>
-        </div>
+      {/* ── RESPONSIVE AEROSPACE HUD OVERLAYS ── */}
+      {hudVisible && (
+        <>
+          {/* Top Left: Sleek Branding & Dropdown Quick Navigation */}
+          <div className="absolute top-4 left-4 z-[400] space-y-2 pointer-events-auto max-w-[calc(100vw-6rem)]">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <div className="bg-[#040816]/90 backdrop-blur-xl border border-cyan-500/40 px-3 py-1.5 rounded-xl text-xs font-mono text-cyan-300 flex items-center gap-2 shadow-2xl">
+                <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+                <span className="font-heading font-extrabold text-[11px] tracking-wider uppercase">
+                  NASA MARS TREK // GIS
+                </span>
+              </div>
 
-        {/* Quick Nav Chips */}
-        <div className="bg-[#040816]/90 backdrop-blur-md border border-cyan-500/30 p-2 rounded-xl shadow-xl max-w-xs space-y-1">
-          <div className="text-[10px] text-cyan-400 font-bold px-1 flex items-center gap-1">
-            <Compass className="w-3 h-3" /> QUICK JUMP SITES
-          </div>
-          <div className="grid grid-cols-2 gap-1 text-[10px]">
-            {QUICK_NAV_LOCATIONS.map((loc, idx) => (
+              {/* Quick Jump Dropdown Toggle */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    sfx.click();
+                    setIsJumpOpen(!isJumpOpen);
+                    setIsLayersOpen(false);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-lg ${
+                    isJumpOpen
+                      ? 'bg-cyan-500 text-slate-950 border-cyan-300'
+                      : 'bg-[#040816]/90 backdrop-blur-xl text-slate-200 border-cyan-500/30 hover:border-cyan-400'
+                  }`}
+                >
+                  <Compass className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>SITES ({QUICK_NAV_LOCATIONS.length})</span>
+                  {isJumpOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
+
+                {/* Dropdown Menu */}
+                {isJumpOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-56 bg-[#040816]/95 backdrop-blur-2xl border border-cyan-500/40 rounded-xl p-2 shadow-2xl space-y-1 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="text-[9px] text-cyan-400 font-bold px-1.5 py-0.5 border-b border-cyan-500/20 flex items-center justify-between">
+                      <span>ORBITAL RECON JUMP</span>
+                      <span>MOLA</span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1 max-h-56 overflow-y-auto pt-1">
+                      {QUICK_NAV_LOCATIONS.map((loc, idx) => (
+                        <button
+                          key={loc.name || idx}
+                          onClick={() => flyToLocation(loc)}
+                          className="px-2.5 py-1.5 rounded-lg bg-slate-900/90 hover:bg-cyan-950 text-slate-300 hover:text-cyan-200 text-left text-xs transition-colors cursor-pointer flex items-center justify-between group"
+                        >
+                          <span className="truncate">{loc.name}</span>
+                          <span className="text-[9px] text-slate-500 group-hover:text-cyan-400 font-mono">
+                            Z{loc.zoom || 11}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Reset to Wide Crater Overview */}
               <button
-                key={loc.id || loc.name || idx}
-                onClick={() => flyToLocation(loc)}
-                className="px-2 py-1 rounded bg-slate-900/90 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border border-slate-800 text-left truncate transition-colors"
-                title={loc.description || loc.name}
+                onClick={resetToOverview}
+                className="bg-[#040816]/90 backdrop-blur-xl border border-slate-700 hover:border-cyan-500/50 px-2.5 py-1.5 rounded-xl text-xs text-slate-400 hover:text-cyan-300 flex items-center gap-1 cursor-pointer transition-colors shadow-lg"
+                title="Reset zoom to wide Jezero Crater view"
               >
-                {loc.label || loc.name}
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline text-[11px]">RESET ZOOM</span>
               </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Top Right: Layer Switcher & Compass Rose */}
-      <div className="absolute top-4 right-4 z-[400] space-y-2 pointer-events-auto flex flex-col items-end">
-        {/* Compass Rose */}
-        <div className="w-10 h-10 rounded-full bg-[#040816]/90 border border-cyan-500/40 flex items-center justify-center shadow-xl">
-          <div className="text-[10px] font-bold text-rose-400 flex flex-col items-center">
-            <span>▲ N</span>
-          </div>
-        </div>
-
-        {/* Layer Controls Panel */}
-        <div className="bg-[#040816]/95 border border-cyan-500/30 p-2.5 rounded-xl shadow-2xl backdrop-blur-md text-xs space-y-1.5 w-48">
-          <div className="text-[10px] text-cyan-400 font-bold flex items-center gap-1.5 border-b border-cyan-500/20 pb-1">
-            <Layers className="w-3 h-3" /> MAP LAYERS
+            </div>
           </div>
 
-          {[
-            { key: 'mola', label: 'MOLA Relief', color: 'text-sky-300' },
-            { key: 'themis', label: 'THEMIS Thermal', color: 'text-amber-300' },
-            { key: 'hazards', label: 'Hazard Zones', color: 'text-rose-300' },
-            { key: 'science', label: 'Science Sites', color: 'text-purple-300' },
-            { key: 'crism', label: 'CRISM Minerals', color: 'text-fuchsia-300' },
-            { key: 'rover', label: 'Rover Traverse', color: 'text-orange-300' },
-            { key: 'route', label: 'EVA Route', color: 'text-emerald-300' }
-          ].map(({ key, label, color }) => (
-            <label
-              key={key}
-              className="flex items-center justify-between text-[11px] cursor-pointer hover:bg-slate-900/60 p-1 rounded transition-colors"
-            >
-              <span className={color}>{label}</span>
-              <input
-                type="checkbox"
-                checked={layers[key]}
-                onChange={() => setLayers({ ...layers, [key]: !layers[key] })}
-                className="rounded accent-cyan-500 cursor-pointer"
-              />
-            </label>
-          ))}
+          {/* Top Right: Layer Switcher, Compass & Zoom Controls */}
+          <div className="absolute top-4 right-4 z-[400] space-y-2 pointer-events-auto flex flex-col items-end">
+            <div className="flex items-center gap-1.5">
+              {/* Layers Popover Button */}
+              <div className="relative">
+                <button
+                  onClick={() => {
+                    sfx.click();
+                    setIsLayersOpen(!isLayersOpen);
+                    setIsJumpOpen(false);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 transition-all cursor-pointer border shadow-lg ${
+                    isLayersOpen
+                      ? 'bg-cyan-500 text-slate-950 border-cyan-300'
+                      : 'bg-[#040816]/90 backdrop-blur-xl text-slate-200 border-cyan-500/30 hover:border-cyan-400'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>LAYERS ({activeLayerCount})</span>
+                  {isLayersOpen ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                </button>
 
-          {/* Measure Tool Button */}
-          <button
-            onClick={() => {
-              setMeasureMode(!measureMode);
-              setMeasurePoints([]);
-              setMeasureDistance(null);
-            }}
-            className={`w-full mt-2 py-1 px-2 rounded text-[10px] font-bold flex items-center justify-center gap-1 transition-all ${
-              measureMode
-                ? 'bg-cyan-500 text-slate-950 shadow-[0_0_10px_rgba(0,240,255,0.5)]'
-                : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800'
-            }`}
-          >
-            <Ruler className="w-3 h-3" />
-            {measureMode ? 'MEASURE: ACTIVE' : 'MEASURE DISTANCE'}
-          </button>
-        </div>
-      </div>
+                {/* Layers Dropdown Menu */}
+                {isLayersOpen && (
+                  <div className="absolute top-full right-0 mt-1 w-52 bg-[#040816]/95 backdrop-blur-2xl border border-cyan-500/40 rounded-xl p-2.5 shadow-2xl space-y-2 animate-in fade-in zoom-in-95 duration-150">
+                    <div className="text-[10px] text-cyan-400 font-bold border-b border-cyan-500/20 pb-1 flex items-center justify-between">
+                      <span>MAP OVERLAYS</span>
+                      <span className="text-[9px] text-slate-500">TOGGLE</span>
+                    </div>
 
-      {/* Measurement HUD Chip */}
-      {measureMode && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[400] bg-cyan-950/90 border border-cyan-400 px-4 py-2 rounded-xl text-xs font-mono text-cyan-200 shadow-2xl flex items-center gap-2">
-          <Ruler className="w-4 h-4 text-cyan-400" />
-          {measureDistance !== null ? (
-            <span>
-              DISTANCE: <strong>{(measureDistance / 1000).toFixed(2)} km</strong> ({Math.round(measureDistance)} m)
-            </span>
-          ) : (
-            <span>Click 2 points on the terrain to measure surface distance</span>
+                    <div className="space-y-1">
+                      {[
+                        { key: 'mola', label: 'MOLA Relief', color: 'text-sky-300' },
+                        { key: 'themis', label: 'THEMIS Thermal', color: 'text-amber-300' },
+                        { key: 'hazards', label: 'Hazard Zones', color: 'text-rose-300' },
+                        { key: 'science', label: 'Science Sites', color: 'text-purple-300' },
+                        { key: 'crism', label: 'CRISM Minerals', color: 'text-fuchsia-300' },
+                        { key: 'rover', label: 'Rover Traverse', color: 'text-orange-300' },
+                        { key: 'route', label: 'EVA Route', color: 'text-emerald-300' }
+                      ].map(({ key, label, color }) => (
+                        <label
+                          key={key}
+                          className="flex items-center justify-between text-xs cursor-pointer hover:bg-slate-900/80 px-2 py-1 rounded transition-colors"
+                        >
+                          <span className={color}>{label}</span>
+                          <input
+                            type="checkbox"
+                            checked={layers[key]}
+                            onChange={() => setLayers({ ...layers, [key]: !layers[key] })}
+                            className="rounded accent-cyan-500 cursor-pointer"
+                          />
+                        </label>
+                      ))}
+                    </div>
+
+                    {/* Measure Distance Button */}
+                    <button
+                      onClick={() => {
+                        sfx.click();
+                        setMeasureMode(!measureMode);
+                        setMeasurePoints([]);
+                        setMeasureDistance(null);
+                        setIsLayersOpen(false);
+                      }}
+                      className={`w-full py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        measureMode
+                          ? 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(0,240,255,0.5)]'
+                          : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700'
+                      }`}
+                    >
+                      <Ruler className="w-3.5 h-3.5" />
+                      {measureMode ? 'MEASURE: ACTIVE' : 'MEASURE DISTANCE'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Compass Indicator */}
+              <div className="w-8 h-8 rounded-xl bg-[#040816]/90 border border-cyan-500/40 flex items-center justify-center shadow-lg text-[10px] font-bold text-rose-400">
+                ▲ N
+              </div>
+
+              {/* Toggle All HUD Visibility Button */}
+              <button
+                onClick={() => {
+                  sfx.click();
+                  setHudVisible(false);
+                }}
+                className="w-8 h-8 rounded-xl bg-[#040816]/90 border border-slate-700 hover:border-cyan-400 flex items-center justify-center shadow-lg text-slate-400 hover:text-cyan-300 cursor-pointer transition-colors"
+                title="Hide all overlays for pure map view"
+              >
+                <EyeOff className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Custom Map Zoom Buttons */}
+            <div className="bg-[#040816]/90 border border-slate-800 rounded-xl overflow-hidden shadow-xl flex flex-col">
+              <button
+                onClick={() => handleZoom(1)}
+                className="p-1.5 text-slate-300 hover:text-cyan-300 hover:bg-slate-900/80 transition-colors cursor-pointer border-b border-slate-800"
+                title="Zoom In"
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+              <button
+                onClick={() => handleZoom(-1)}
+                className="p-1.5 text-slate-300 hover:text-cyan-300 hover:bg-slate-900/80 transition-colors cursor-pointer"
+                title="Zoom Out"
+              >
+                <Minus className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Measurement Floating Chip (Center Top) */}
+          {measureMode && (
+            <div className="absolute top-16 left-1/2 -translate-x-1/2 z-[400] bg-[#040816]/95 border border-cyan-400 px-4 py-2 rounded-xl text-xs font-mono text-cyan-200 shadow-2xl flex items-center gap-2 animate-in fade-in duration-150">
+              <Ruler className="w-4 h-4 text-cyan-400" />
+              {measureDistance !== null ? (
+                <span>
+                  DISTANCE: <strong className="text-white">{(measureDistance / 1000).toFixed(2)} km</strong> ({Math.round(measureDistance)} m)
+                </span>
+              ) : (
+                <span>Click 2 points on the terrain to measure surface distance</span>
+              )}
+              <button
+                onClick={() => {
+                  setMeasureMode(false);
+                  setMeasurePoints([]);
+                  setMeasureDistance(null);
+                }}
+                className="ml-2 text-slate-500 hover:text-white p-0.5 rounded cursor-pointer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           )}
-        </div>
-      )}
 
-      {/* Bottom Left: Live Cursor Coordinates & Telemetry */}
-      <div className="absolute bottom-4 left-4 z-[400] max-w-sm w-full space-y-2 pointer-events-auto">
-        {/* Lat / Lng / Elev Bar */}
-        <div className="bg-[#040816]/95 backdrop-blur-xl border border-cyan-500/40 px-3 py-2 rounded-xl text-xs text-slate-300 shadow-2xl flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-cyan-300 font-bold">
-            <MapPin className="w-3.5 h-3.5" />
-            <span>{mousePos.lat.toFixed(4)}°N, {mousePos.lng.toFixed(4)}°E</span>
-          </div>
-          <span className="text-amber-400 font-bold">
-            ELEV: {mousePos.elev} m
-          </span>
-        </div>
-
-        {/* Route Metrics Card */}
-        <div className="bg-[#040816]/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl p-3.5 shadow-2xl space-y-2.5">
-          <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1.5">
-            <div className="flex items-center gap-1.5 text-cyan-400 font-bold font-heading">
-              <Activity className="w-3.5 h-3.5" /> EVA ROUTE METRICS
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setActiveRouteType('safe')}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  activeRouteType === 'safe'
-                    ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
-                    : 'text-slate-400'
-                }`}
-              >
-                SAFE
-              </button>
-              <button
-                onClick={() => setActiveRouteType('direct')}
-                className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                  activeRouteType === 'direct'
-                    ? 'bg-rose-950 text-rose-400 border border-rose-500/40'
-                    : 'text-slate-400'
-                }`}
-              >
-                DIRECT
-              </button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-3 gap-2 text-center text-xs">
-            <div className="bg-slate-950 p-1.5 rounded border border-slate-800">
-              <div className="text-[9px] text-slate-500">TRAVERSE</div>
-              <div className="font-bold text-slate-200 mt-0.5">{activeRoute.distanceKm} km</div>
-            </div>
-            <div className="bg-slate-950 p-1.5 rounded border border-slate-800">
-              <div className="text-[9px] text-slate-500">TIME</div>
-              <div className="font-bold text-slate-200 mt-0.5">{activeRoute.estimatedMinutes} min</div>
-            </div>
-            <div className="bg-slate-950 p-1.5 rounded border border-slate-800">
-              <div className="text-[9px] text-slate-500">MAX PITCH</div>
-              <div
-                className={`font-bold mt-0.5 ${
-                  activeRoute.maxSlopeDeg > 15 ? 'text-rose-400' : 'text-emerald-400'
-                }`}
-              >
-                {activeRoute.maxSlopeDeg}°
+          {/* Bottom Left: Responsive Minimal Telemetry Bar + Expandable Route Metrics */}
+          <div className="absolute bottom-4 left-4 z-[400] max-w-sm w-[calc(100vw-2rem)] sm:w-80 space-y-1.5 pointer-events-auto">
+            {/* Minimal High-Tech Single-Line Bar */}
+            <div
+              onClick={() => setIsMetricsExpanded(!isMetricsExpanded)}
+              className="bg-[#040816]/90 backdrop-blur-xl border border-cyan-500/40 px-3 py-2 rounded-xl text-xs text-slate-300 shadow-2xl flex items-center justify-between cursor-pointer hover:border-cyan-400 transition-colors"
+            >
+              <div className="flex items-center gap-1.5 text-cyan-300 font-bold">
+                <MapPin className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{mousePos.lat.toFixed(4)}°N, {mousePos.lng.toFixed(4)}°E</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-amber-400 font-bold text-[11px]">
+                  {mousePos.elev}m
+                </span>
+                <span className="text-slate-500">|</span>
+                <span className="text-emerald-400 font-bold text-[11px] flex items-center gap-1">
+                  {activeRoute.distanceKm} km
+                  {isMetricsExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronUp className="w-3 h-3" />}
+                </span>
               </div>
             </div>
+
+            {/* Expandable Route Metrics Card */}
+            {isMetricsExpanded && (
+              <div className="bg-[#040816]/95 backdrop-blur-2xl border border-cyan-500/40 rounded-xl p-3 shadow-2xl space-y-2.5 animate-in fade-in duration-150">
+                <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1.5">
+                  <div className="flex items-center gap-1.5 text-cyan-400 font-bold text-xs">
+                    <Activity className="w-3.5 h-3.5" /> EVA ROUTE METRICS
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => setActiveRouteType('safe')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer ${
+                        activeRouteType === 'safe'
+                          ? 'bg-emerald-950 text-emerald-400 border border-emerald-500/40'
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      SAFE
+                    </button>
+                    <button
+                      onClick={() => setActiveRouteType('direct')}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold cursor-pointer ${
+                        activeRouteType === 'direct'
+                          ? 'bg-rose-950 text-rose-400 border border-rose-500/40'
+                          : 'text-slate-400'
+                      }`}
+                    >
+                      DIRECT
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-3 gap-1.5 text-center text-xs">
+                  <div className="bg-slate-950 p-1.5 rounded border border-slate-800">
+                    <div className="text-[8px] text-slate-500">TRAVERSE</div>
+                    <div className="font-bold text-slate-200 mt-0.5">{activeRoute.distanceKm} km</div>
+                  </div>
+                  <div className="bg-slate-950 p-1.5 rounded border border-slate-800">
+                    <div className="text-[8px] text-slate-500">TIME</div>
+                    <div className="font-bold text-slate-200 mt-0.5">{activeRoute.estimatedMinutes} min</div>
+                  </div>
+                  <div className="bg-slate-950 p-1.5 rounded border border-slate-800">
+                    <div className="text-[8px] text-slate-500">MAX PITCH</div>
+                    <div
+                      className={`font-bold mt-0.5 ${
+                        activeRoute.maxSlopeDeg > 15 ? 'text-rose-400' : 'text-emerald-400'
+                      }`}
+                    >
+                      {activeRoute.maxSlopeDeg}°
+                    </div>
+                  </div>
+                </div>
+
+                {/* Simulation Trigger */}
+                <div className="pt-0.5 flex items-center gap-2">
+                  <button
+                    onClick={handleToggleSim}
+                    className="flex-1 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-cyan-500/30"
+                  >
+                    <Play className="w-3 h-3 fill-slate-950" />
+                    {isSimulating ? 'PAUSE WALK' : 'SIMULATE WALK'}
+                  </button>
+                  <div className="text-xs text-slate-400 font-bold font-mono">{simProgress}%</div>
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* Simulation Trigger */}
-          <div className="pt-1 flex items-center gap-2">
-            <button
-              onClick={handleToggleSim}
-              className="flex-1 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-lg shadow-cyan-500/30"
-            >
-              {isSimulating ? 'PAUSE TRAVERSAL' : 'SIMULATE REAL-TIME WALK'}
-            </button>
-            <div className="text-[11px] text-slate-400 font-bold">{simProgress}%</div>
-          </div>
-        </div>
-      </div>
+          {/* Bottom Right: Click Inspector Card */}
+          {inspectedPoint && (
+            <div className="absolute bottom-4 right-4 z-[400] max-w-xs w-[calc(100vw-2rem)] sm:w-72 bg-[#040816]/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl p-3 shadow-2xl space-y-1.5 pointer-events-auto text-xs animate-in fade-in duration-150">
+              <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1">
+                <span className="font-heading font-bold text-cyan-300 text-[11px]">INSPECTED REGION</span>
+                <button
+                  onClick={() => setInspectedPoint(null)}
+                  className="text-slate-500 hover:text-white p-0.5 cursor-pointer"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+              <div className="space-y-0.5 text-[11px]">
+                <div>Coord: {inspectedPoint.lat.toFixed(4)}°N, {inspectedPoint.lng.toFixed(4)}°E</div>
+                <div>Elevation: <strong className="text-amber-400">{inspectedPoint.elev}m</strong></div>
+                <div>Terrain: <span className="text-slate-300">{inspectedPoint.terrain}</span></div>
+                <div>Nearest Target: <span className="text-purple-300 font-bold">{inspectedPoint.nearestTarget}</span></div>
+              </div>
+            </div>
+          )}
+        </>
+      )}
 
-      {/* Bottom Right: Click Inspector Card */}
-      {inspectedPoint && (
-        <div className="absolute bottom-4 right-4 z-[400] max-w-xs w-full bg-[#040816]/95 backdrop-blur-xl border border-cyan-500/30 rounded-xl p-3 shadow-2xl space-y-2 pointer-events-auto text-xs">
-          <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1">
-            <span className="font-heading font-bold text-cyan-300">INSPECTED REGION</span>
-            <button
-              onClick={() => setInspectedPoint(null)}
-              className="text-slate-500 hover:text-white"
-            >
-              ✕
-            </button>
-          </div>
-          <div className="space-y-1 text-[11px]">
-            <div>Coord: {inspectedPoint.lat.toFixed(4)}°N, {inspectedPoint.lng.toFixed(4)}°E</div>
-            <div>Elevation: <strong className="text-amber-400">{inspectedPoint.elev}m</strong></div>
-            <div>Classification: <span className="text-slate-300">{inspectedPoint.terrain}</span></div>
-            <div>Nearest Target: <span className="text-purple-300 font-bold">{inspectedPoint.nearestTarget}</span></div>
-          </div>
-        </div>
+      {/* When HUD is hidden, show a small floating button to bring it back */}
+      {!hudVisible && (
+        <button
+          onClick={() => {
+            sfx.click();
+            setHudVisible(true);
+          }}
+          className="absolute top-4 right-4 z-[400] bg-[#040816]/90 border border-cyan-500/50 hover:border-cyan-300 px-3 py-1.5 rounded-xl text-xs font-mono text-cyan-300 shadow-2xl flex items-center gap-1.5 cursor-pointer pointer-events-auto"
+        >
+          <Eye className="w-3.5 h-3.5" />
+          <span>SHOW HUD</span>
+        </button>
       )}
     </div>
   );

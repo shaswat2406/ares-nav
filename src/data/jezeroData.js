@@ -189,14 +189,14 @@ export const SOL_TELEMETRY = {
 
 // Quick navigation locations for the GIS map jump panel
 export const QUICK_NAV_LOCATIONS = [
-  { name: "Jezero Center",   lat: 18.4550, lng: 77.4300, zoom: 12 },
-  { name: "Landing Site",    lat: 18.4447, lng: 77.4508, zoom: 14 },
-  { name: "Western Delta",   lat: 18.4550, lng: 77.4120, zoom: 13 },
-  { name: "Kodiak",          lat: 18.4230, lng: 77.4300, zoom: 14 },
-  { name: "Séítah",          lat: 18.4350, lng: 77.4420, zoom: 13 },
-  { name: "Crater Rim",      lat: 18.4800, lng: 77.4100, zoom: 12 },
-  { name: "Three Forks",     lat: 18.4550, lng: 77.4120, zoom: 14 },
-  { name: "Belva",           lat: 18.4680, lng: 77.3850, zoom: 14 }
+  { name: "Jezero Overview",   lat: 18.4447, lng: 77.4508, zoom: 9 },
+  { name: "Landing Site",      lat: 18.4447, lng: 77.4508, zoom: 11 },
+  { name: "Western Delta",     lat: 18.4550, lng: 77.4120, zoom: 11 },
+  { name: "Kodiak Butte",      lat: 18.4230, lng: 77.4300, zoom: 12 },
+  { name: "Séítah Dunes",      lat: 18.4350, lng: 77.4420, zoom: 11 },
+  { name: "Crater Rim",        lat: 18.4800, lng: 77.4100, zoom: 10 },
+  { name: "Three Forks Delta", lat: 18.4550, lng: 77.4120, zoom: 11 },
+  { name: "Belva Crater",      lat: 18.4680, lng: 77.3850, zoom: 11 }
 ];
 
 // Perseverance rover traverse waypoints (actual traverse summary, Sol 1–1328)
