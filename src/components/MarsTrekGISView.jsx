@@ -60,8 +60,8 @@ const targetIcon = createCustomIcon('#7c3aed', '#c084fc', 'SCI');
 const roverIcon = createCustomIcon('#ea580c', '#fb923c', 'M20');
 
 // Map Event Listener for Cursor Coordinates & Click Inspector
-function MapEventListener({ onMouseMove, onMapClick }) {
-  useMapEvents({
+function MapEventListener({ onMouseMove, onMapClick, onMapReady }) {
+  const map = useMapEvents({
     mousemove(e) {
       onMouseMove(e.latlng);
     },
@@ -69,11 +69,17 @@ function MapEventListener({ onMouseMove, onMapClick }) {
       onMapClick(e.latlng);
     }
   });
+  useEffect(() => {
+    if (map && onMapReady) {
+      onMapReady(map);
+    }
+  }, [map, onMapReady]);
   return null;
 }
 
 export function MarsTrekGISView() {
   const mapRef = useRef(null);
+  const [leafletMap, setLeafletMap] = useState(null);
   const [activeRouteType, setActiveRouteType] = useState('safe');
   const [selectedTarget, setSelectedTarget] = useState(SCIENCE_TARGETS[1]);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -164,7 +170,9 @@ export function MarsTrekGISView() {
 
   const flyToLocation = (loc) => {
     sfx.click();
-    if (mapRef.current) {
+    if (leafletMap) {
+      leafletMap.flyTo([loc.lat, loc.lng], loc.zoom, { duration: 1.5 });
+    } else if (mapRef.current?.flyTo) {
       mapRef.current.flyTo([loc.lat, loc.lng], loc.zoom, { duration: 1.5 });
     }
   };
@@ -192,8 +200,10 @@ export function MarsTrekGISView() {
     return () => clearInterval(interval);
   }, [isSimulating]);
 
-  // Rover traverse polyline coordinates
-  const roverTraversePositions = ROVER_TRAVERSE.map((p) => [p.lat, p.lng]);
+  // Rover traverse polyline coordinates safely normalized for array or object format
+  const roverTraversePositions = ROVER_TRAVERSE.map((p) =>
+    Array.isArray(p) ? [p[0], p[1]] : [p.lat, p.lng]
+  );
 
   return (
     <div className="relative w-full h-full min-h-screen bg-[#040816] text-slate-200 font-mono select-none overflow-hidden flex flex-col">
@@ -207,7 +217,7 @@ export function MarsTrekGISView() {
         scrollWheelZoom={true}
         className="w-full h-full z-0"
       >
-        <MapEventListener onMouseMove={handleMouseMove} onMapClick={handleMapClick} />
+        <MapEventListener onMouseMove={handleMouseMove} onMapClick={handleMapClick} onMapReady={setLeafletMap} />
 
         {/* Layer 1: NASA JPL Official Mars Trek Global MOLA Shaded Color Elevation Basemap */}
         {layers.mola && (
@@ -302,7 +312,7 @@ export function MarsTrekGISView() {
         {layers.crism &&
           CRISM_DETECTIONS.map((det, idx) => (
             <CircleMarker
-              key={`crism-${idx}`}
+              key={`crism-${det.id || idx}`}
               center={[det.lat, det.lng]}
               radius={6}
               pathOptions={{
@@ -316,8 +326,10 @@ export function MarsTrekGISView() {
                 <div className="p-1 text-slate-900 font-mono text-xs">
                   <span className="text-[10px] text-purple-700 font-bold block">CRISM DETECTION</span>
                   <div className="font-bold text-purple-900">{det.mineral}</div>
-                  <div className="text-[10px] text-slate-600">Confidence: {Math.round(det.confidence * 100)}%</div>
-                  <div className="text-[10px] text-slate-500 italic mt-0.5">{det.paper}</div>
+                  <div className="text-[10px] text-slate-600">
+                    Confidence: {det.confidence > 1 ? det.confidence : Math.round(det.confidence * 100)}%
+                  </div>
+                  <div className="text-[10px] text-slate-500 italic mt-0.5">{det.citation || det.paper}</div>
                 </div>
               </Popup>
             </CircleMarker>
@@ -335,25 +347,31 @@ export function MarsTrekGISView() {
                 dashArray: '4, 6'
               }}
             />
-            {ROVER_TRAVERSE.filter((_, i) => i % 3 === 0).map((pt, idx) => (
-              <CircleMarker
-                key={`sol-${idx}`}
-                center={[pt.lat, pt.lng]}
-                radius={4}
-                pathOptions={{ color: '#ea580c', fillColor: '#f97316', fillOpacity: 0.9 }}
-              >
-                <Popup>
-                  <div className="p-1 text-slate-900 font-mono text-xs">
-                    <span className="font-bold text-orange-700">Sol {pt.sol}</span>: {pt.label}
-                  </div>
-                </Popup>
-              </CircleMarker>
-            ))}
+            {ROVER_TRAVERSE.filter((_, i) => i % 3 === 0).map((pt, idx) => {
+              const lat = Array.isArray(pt) ? pt[0] : pt.lat;
+              const lng = Array.isArray(pt) ? pt[1] : pt.lng;
+              const sol = pt.sol !== undefined ? pt.sol : idx * 90;
+              const label = pt.label || `Traverse Waypoint #${idx + 1}`;
+              return (
+                <CircleMarker
+                  key={`sol-${idx}`}
+                  center={[lat, lng]}
+                  radius={4}
+                  pathOptions={{ color: '#ea580c', fillColor: '#f97316', fillOpacity: 0.9 }}
+                >
+                  <Popup>
+                    <div className="p-1 text-slate-900 font-mono text-xs">
+                      <span className="font-bold text-orange-700">Sol {sol}</span>: {label}
+                    </div>
+                  </Popup>
+                </CircleMarker>
+              );
+            })}
           </>
         )}
 
         {/* Active Route Traversal Polyline */}
-        {layers.route && (
+        {layers.route && activeRoute?.waypoints && (
           <Polyline
             positions={activeRoute.waypoints}
             pathOptions={{
@@ -389,14 +407,14 @@ export function MarsTrekGISView() {
             <Compass className="w-3 h-3" /> QUICK JUMP SITES
           </div>
           <div className="grid grid-cols-2 gap-1 text-[10px]">
-            {QUICK_NAV_LOCATIONS.map((loc) => (
+            {QUICK_NAV_LOCATIONS.map((loc, idx) => (
               <button
-                key={loc.id}
+                key={loc.id || loc.name || idx}
                 onClick={() => flyToLocation(loc)}
                 className="px-2 py-1 rounded bg-slate-900/90 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border border-slate-800 text-left truncate transition-colors"
-                title={loc.description}
+                title={loc.description || loc.name}
               >
-                {loc.label}
+                {loc.label || loc.name}
               </button>
             ))}
           </div>
