@@ -81,6 +81,9 @@ function App() {
   const [comparedRoutes, setComparedRoutes] = useState(null);
   const [isRouteCompareOpen, setIsRouteCompareOpen] = useState(false);
 
+  // Mobile Tactical HUD Panel Toggle ('none' | 'routes' | 'telemetry')
+  const [mobilePanel, setMobilePanel] = useState('none');
+
   // Modals State
   const [isTourOpen, setIsTourOpen] = useState(true);
   const [isExportOpen, setIsExportOpen] = useState(false);
@@ -195,42 +198,50 @@ function App() {
       {/* ============================================================== */}
       {/* 2. FLOATING AEROSPACE COMMAND HEADER (TOP)                      */}
       {/* ============================================================== */}
-      <header className="absolute top-3 left-4 right-4 z-20 flex flex-col md:flex-row items-center justify-between gap-2 pointer-events-none">
+      <header className="absolute top-2 sm:top-3 left-2 right-2 sm:left-4 sm:right-4 z-20 flex flex-col md:flex-row items-stretch md:items-center justify-between gap-1.5 sm:gap-2 pointer-events-none">
         {/* Top-Left Branding */}
-        <div className="hud-glass hud-corner-tl hud-corner-br rounded-2xl px-4 py-2 flex items-center space-x-3 pointer-events-auto border-cyan-500/30">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-cyan-500 via-sky-600 to-blue-700 flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.4)] border border-cyan-300/40">
-            <Rocket className="w-4 h-4 text-slate-950 transform -rotate-45" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="font-heading font-extrabold text-sm md:text-base tracking-widest text-slate-100 uppercase">
-                ARES-NAV <span className="text-cyan-400 text-[10px] font-mono-num px-1.5 py-0.5 rounded border border-cyan-500/50 bg-cyan-950/40 font-bold">TACTICAL HUD // v4.0</span>
-              </h1>
-              <span className="text-[10px] bg-slate-950/90 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-mono font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                SHASWAT SINHA (SURAT)
-              </span>
+        <div className="hud-glass hud-corner-tl hud-corner-br rounded-2xl px-3 py-1.5 sm:px-4 sm:py-2 flex items-center justify-between md:justify-start space-x-2.5 sm:space-x-3 pointer-events-auto border-cyan-500/30">
+          <div className="flex items-center space-x-2.5 sm:space-x-3">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-br from-cyan-500 via-sky-600 to-blue-700 flex items-center justify-center shadow-[0_0_15px_rgba(0,240,255,0.4)] border border-cyan-300/40 shrink-0">
+              <Rocket className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-950 transform -rotate-45" />
             </div>
-            <p className="text-[10px] font-mono text-slate-400">
-              NASA SPACE APPS CHALLENGE 2026 // INTERPLANETARY SURVIVAL GUIDE: MARTIAN MAP
-            </p>
+            <div>
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <h1 className="font-heading font-extrabold text-xs sm:text-sm md:text-base tracking-widest text-slate-100 uppercase">
+                  ARES-NAV <span className="text-cyan-400 text-[9px] sm:text-[10px] font-mono-num px-1 py-0.5 rounded border border-cyan-500/50 bg-cyan-950/40 font-bold">TACTICAL HUD</span>
+                </h1>
+                <span className="text-[9px] sm:text-[10px] bg-slate-950/90 text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded font-mono font-bold hidden sm:flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+                  SHASWAT SINHA (SURAT)
+                </span>
+              </div>
+              <p className="text-[9px] sm:text-[10px] font-mono text-slate-400 hidden xs:block truncate max-w-[280px] sm:max-w-none">
+                NASA SPACE APPS CHALLENGE 2026 // MARTIAN MAP
+              </p>
+            </div>
           </div>
+
+          {/* Mobile Astronaut Badge */}
+          <span className="text-[9px] bg-slate-950/90 text-emerald-400 border border-emerald-500/40 px-1.5 py-0.5 rounded font-mono font-bold sm:hidden flex items-center gap-1 shrink-0">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
+            SURAT
+          </span>
         </div>
 
-        {/* Top-Right Mission Tools & Navigation */}
-        <div className="flex flex-wrap items-center gap-1.5 pointer-events-auto">
+        {/* Top-Right Mission Tools & Navigation (Horizontal scrolling on mobile) */}
+        <div className="flex items-center gap-1.5 pointer-events-auto overflow-x-auto no-scrollbar max-w-full py-0.5 px-0.5 shrink-0">
           {/* 🥽 FIRST-PERSON VISOR POV TOGGLE BUTTON (Only for 3D Canyon View) */}
           {viewMode === 'surface3d' && (
             <button
               onClick={toggleFirstPerson}
-              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all border ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-mono font-bold flex items-center gap-1.5 cursor-pointer transition-all border shrink-0 ${
                 isFirstPerson
                   ? 'bg-cyan-500 text-slate-950 border-cyan-300 shadow-[0_0_20px_rgba(0,240,255,0.7)] animate-pulse'
                   : 'hud-glass text-cyan-300 border-cyan-500/40 hover:border-cyan-300'
               }`}
             >
               <User className="w-3.5 h-3.5" />
-              {isFirstPerson ? '🥽 VISOR POV: ACTIVE' : 'SWITCH TO VISOR POV'}
+              {isFirstPerson ? '🥽 VISOR: ON' : 'VISOR POV'}
             </button>
           )}
 
@@ -404,7 +415,9 @@ function App() {
       {viewMode === 'surface3d' && (
         <>
           {/* 3. FLOATING LEFT PANEL: ALGORITHM SELECTOR & EVA CONFIG */}
-          <div className="absolute top-20 left-4 z-20 w-80 space-y-2.5 pointer-events-auto max-h-[85vh] overflow-y-auto pr-1">
+          <div className={`absolute top-20 left-2 right-2 md:right-auto md:left-4 z-20 w-auto md:w-80 space-y-2.5 pointer-events-auto max-h-[75vh] md:max-h-[85vh] overflow-y-auto pr-1 ${
+            mobilePanel === 'routes' ? 'block' : 'hidden md:block'
+          }`}>
         {/* Route Selector Card */}
         <div className="hud-glass hud-corner-tl hud-corner-br rounded-2xl p-3.5 border-cyan-500/30 space-y-2.5">
           <div className="flex items-center justify-between border-b border-cyan-500/20 pb-1.5">
@@ -508,7 +521,9 @@ function App() {
       {/* ============================================================== */}
       {/* 4. FLOATING RIGHT PANEL: TELEMETRY & LIVE LIFE SUPPORT CALC    */}
       {/* ============================================================== */}
-      <div className="absolute top-20 right-4 z-20 w-96 space-y-2.5 pointer-events-auto max-h-[85vh] overflow-y-auto pr-1">
+      <div className={`absolute top-20 left-2 right-2 md:left-auto md:right-4 z-20 w-auto md:w-96 space-y-2.5 pointer-events-auto max-h-[75vh] md:max-h-[85vh] overflow-y-auto pr-1 ${
+        mobilePanel === 'telemetry' ? 'block' : 'hidden md:block'
+      }`}>
         {/* Core Walk Simulator */}
         <EVASimulator
           activeRoute={activeRoute}
@@ -536,8 +551,57 @@ function App() {
         />
       </div>
 
-      {/* COLLAPSIBLE BOTTOM DRAWER: ELEVATION & SLOPE PROFILE */}
-      <ElevationDrawer activeRoute={activeRoute} />
+      {/* 📱 MOBILE TACTICAL HUD NAVIGATION BAR (Only on phones in 3D Canyon Mode) */}
+      <div className="md:hidden absolute bottom-3 left-2 right-2 z-30 flex items-center justify-center pointer-events-auto">
+        <div className="hud-glass rounded-2xl p-1 flex items-center gap-1 border-cyan-500/40 shadow-2xl backdrop-blur-xl">
+          <button
+            onClick={() => {
+              sfx.click();
+              setMobilePanel(p => p === 'routes' ? 'none' : 'routes');
+            }}
+            className={`px-2.5 py-1.5 rounded-xl text-[11px] font-mono font-bold transition-all flex items-center gap-1 ${
+              mobilePanel === 'routes'
+                ? 'bg-cyan-500 text-slate-950 shadow-[0_0_15px_rgba(0,240,255,0.5)]'
+                : 'text-cyan-300 hover:text-white'
+            }`}
+          >
+            <Navigation className="w-3 h-3" />
+            <span>{mobilePanel === 'routes' ? '✕ CLOSE' : 'ROUTES'}</span>
+          </button>
+
+          <button
+            onClick={() => {
+              sfx.click();
+              setMobilePanel('none');
+            }}
+            className={`px-2 py-1.5 rounded-xl text-[11px] font-mono font-bold transition-all ${
+              mobilePanel === 'none' ? 'text-amber-400 bg-slate-900 border border-amber-500/30' : 'text-slate-400'
+            }`}
+          >
+            <span>3D CANYON</span>
+          </button>
+
+          <button
+            onClick={() => {
+              sfx.click();
+              setMobilePanel(p => p === 'telemetry' ? 'none' : 'telemetry');
+            }}
+            className={`px-2.5 py-1.5 rounded-xl text-[11px] font-mono font-bold transition-all flex items-center gap-1 ${
+              mobilePanel === 'telemetry'
+                ? 'bg-rose-500 text-white shadow-[0_0_15px_rgba(244,63,94,0.5)]'
+                : 'text-rose-300 hover:text-white'
+            }`}
+          >
+            <Activity className="w-3 h-3" />
+            <span>{mobilePanel === 'telemetry' ? '✕ CLOSE' : 'TELEMETRY'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* COLLAPSIBLE BOTTOM DRAWER: ELEVATION & SLOPE PROFILE (Desktop only or collapsed) */}
+      <div className="hidden sm:block">
+        <ElevationDrawer activeRoute={activeRoute} />
+      </div>
     </>
   )}
 
@@ -545,7 +609,7 @@ function App() {
       {/* 5. FLOATING BENCHMARK COMPARISON MODAL                          */}
       {/* ============================================================== */}
       {isRouteCompareOpen && comparedRoutes && (
-        <div className="absolute bottom-20 left-4 z-30 w-[480px]">
+        <div className="absolute bottom-16 sm:bottom-20 left-2 right-2 sm:right-auto sm:left-4 z-30 sm:w-[480px] max-w-full">
           <RouteComparison
             routes={comparedRoutes}
             activeAlgorithm={routeType}
@@ -622,7 +686,7 @@ function App() {
       {/* 8. FLOATING AI MISSION COMMANDER PANEL                          */}
       {/* ============================================================== */}
       {isAIOpen && (
-        <div className="absolute bottom-24 right-4 z-40">
+        <div className="absolute bottom-16 sm:bottom-24 right-2 sm:right-4 z-40 max-w-[calc(100vw-1rem)]">
           <AIMissionCommander
             routeType={routeType}
             activeRoute={activeRoute}

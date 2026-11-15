@@ -126,8 +126,8 @@ export function AIMissionCommander({
   }
 
   return (
-    <div className="hud-glass rounded-2xl border border-indigo-500/40 shadow-[0_0_30px_rgba(99,102,241,0.25)] flex flex-col overflow-hidden"
-         style={{ width: 360, maxHeight: '75vh' }}>
+    <div className="hud-glass rounded-2xl border border-indigo-500/40 shadow-[0_0_30px_rgba(99,102,241,0.25)] flex flex-col overflow-hidden max-w-[calc(100vw-1.5rem)]"
+         style={{ width: 'min(360px, calc(100vw - 1.5rem))', maxHeight: '75vh' }}>
 
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-4 py-2.5 border-b border-indigo-500/20 bg-indigo-950/30">
@@ -137,7 +137,7 @@ export function AIMissionCommander({
           </div>
           <div>
             <div className="text-xs font-mono font-bold text-indigo-300">ARES-AI MISSION COMMANDER</div>
-            <div className="text-[9px] font-mono text-slate-500">Powered by Google Gemini 1.5 Flash</div>
+            <div className="text-[9px] font-mono text-slate-500">Powered by Google Gemini Intelligence</div>
           </div>
         </div>
         <div className="flex items-center gap-1.5">

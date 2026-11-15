@@ -123,3 +123,12 @@ body {
   height: 100%;
   background: #010307 !important;
 }
+
+/* Hide scrollbar for clean mobile horizontal scrolling */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

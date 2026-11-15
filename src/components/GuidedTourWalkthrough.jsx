@@ -254,8 +254,8 @@ export function GuidedTourWalkthrough({
         }}
       />
 
-      {/* Floating Tour Guide Popup Container */}
-      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-8 z-50 max-w-sm md:max-w-md w-full select-none pointer-events-auto animate-in slide-in-from-bottom-5 duration-300">
+      {/* Floating Tour Guide Popup Container (Responsive for all screen sizes) */}
+      <div className="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-8 md:bottom-6 z-50 max-w-sm md:max-w-md sm:w-full select-none pointer-events-auto animate-in slide-in-from-bottom-5 duration-300">
         {/* 🎯 JUDGES CALLOUT BANNER (Guarantees judges immediately see & focus on the tour) */}
         {currentStep === 0 && (
           <div className="mb-2.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/25 via-cyan-500/30 to-blue-500/25 border-2 border-cyan-400 text-[11px] font-mono font-extrabold text-cyan-200 flex items-center justify-between shadow-[0_0_25px_rgba(0,240,255,0.65)] animate-pulse backdrop-blur-md">

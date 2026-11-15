@@ -366,23 +366,23 @@ export function SolarSystemLoadingScreen({ onComplete }) {
         <canvas ref={canvasRef} className="w-full h-full block" />
       </div>
 
-      {/* ── Top Header: Mission & System Identity (Unobtrusive & Clean) ── */}
-      <header className="relative z-10 pt-6 px-6 md:px-10 flex items-center justify-between pointer-events-none">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-cyan-950/70 border border-cyan-400/50 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(0,240,255,0.3)]">
-            <Orbit className="w-5 h-5 animate-spin" style={{ animationDuration: '18s' }} />
+      {/* ── Top Header Ribbon (Responsive) ── */}
+      <header className="relative z-10 pt-4 px-4 sm:pt-6 sm:px-6 md:px-10 flex items-center justify-between pointer-events-none">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-cyan-950/70 border border-cyan-400/50 flex items-center justify-center text-cyan-400 shadow-[0_0_15px_rgba(0,240,255,0.3)] shrink-0">
+            <Orbit className="w-4 h-4 sm:w-5 sm:h-5 animate-spin" style={{ animationDuration: '18s' }} />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="text-xs font-mono font-bold tracking-widest text-cyan-400 uppercase">
+              <span className="text-[11px] sm:text-xs font-mono font-bold tracking-widest text-cyan-400 uppercase">
                 ARES-NAV
               </span>
               <span className="text-[10px] font-mono text-slate-500">//</span>
-              <span className="text-[10px] font-mono text-slate-400 tracking-wider">
+              <span className="text-[9px] sm:text-[10px] font-mono text-slate-400 tracking-wider">
                 HELIOCENTRIC TRANSIT
               </span>
             </div>
-            <h1 className="text-sm md:text-base font-heading font-extrabold text-slate-100 tracking-wide">
+            <h1 className="text-xs sm:text-sm md:text-base font-heading font-extrabold text-slate-100 tracking-wide">
               SOLAR SYSTEM EPHEMERIS CALIBRATION
             </h1>
           </div>
@@ -391,9 +391,10 @@ export function SolarSystemLoadingScreen({ onComplete }) {
         {/* Quick Skip Button in Header */}
         <button
           onClick={handleSkip}
-          className="pointer-events-auto px-3.5 py-1.5 rounded-lg border border-slate-800 hover:border-cyan-400/70 bg-slate-950/80 hover:bg-cyan-950/40 text-slate-400 hover:text-cyan-300 text-xs font-mono transition-all cursor-pointer shadow-md flex items-center gap-1.5 group backdrop-blur-sm"
+          className="pointer-events-auto px-2.5 sm:px-3.5 py-1.5 rounded-lg border border-slate-800 hover:border-cyan-400/70 bg-slate-950/80 hover:bg-cyan-950/40 text-slate-400 hover:text-cyan-300 text-xs font-mono transition-all cursor-pointer shadow-md flex items-center gap-1.5 group backdrop-blur-sm shrink-0"
         >
-          <span>SKIP TO MISSION</span>
+          <span className="hidden xs:inline">SKIP TO MISSION</span>
+          <span className="xs:hidden">SKIP</span>
           <ArrowRight className="w-3.5 h-3.5 text-slate-500 group-hover:text-cyan-400 transition-transform group-hover:translate-x-0.5" />
         </button>
       </header>
@@ -407,25 +408,25 @@ export function SolarSystemLoadingScreen({ onComplete }) {
       </div>
 
       {/* ── Bottom Section: Loading Progress & Real-time Transit Telemetry ── */}
-      <footer className="relative z-10 pb-8 px-6 md:px-12 flex flex-col items-center">
+      <footer className="relative z-10 pb-6 px-4 sm:pb-8 sm:px-6 md:px-12 flex flex-col items-center">
         {/* Animated Loading Text Banner */}
-        <div className="flex items-center gap-2 mb-2.5 px-3.5 py-1 rounded-full bg-slate-950/80 border border-cyan-500/40 text-cyan-300 font-mono text-xs tracking-widest uppercase shadow-[0_0_20px_rgba(0,240,255,0.25)] backdrop-blur-md">
+        <div className="flex items-center gap-2 mb-2 px-3 py-1 rounded-full bg-slate-950/80 border border-cyan-500/40 text-cyan-300 font-mono text-[11px] sm:text-xs tracking-widest uppercase shadow-[0_0_20px_rgba(0,240,255,0.25)] backdrop-blur-md">
           <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
           <span className="font-bold">LOADING MISSION DATA{dots}</span>
         </div>
 
-        <div className="w-full max-w-xl space-y-2.5 bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 md:p-5 shadow-[0_10px_35px_rgba(0,0,0,0.8)] backdrop-blur-md">
+        <div className="w-full max-w-xl space-y-2 bg-slate-950/80 border border-slate-800/80 rounded-2xl p-3.5 sm:p-5 shadow-[0_10px_35px_rgba(0,0,0,0.8)] backdrop-blur-md">
           {/* Progress Header */}
           <div className="flex items-center justify-between text-xs font-mono">
-            <div className="flex items-center gap-2 text-slate-300">
-              <Compass className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '6s' }} />
-              <span className="font-semibold text-slate-200">INTERPLANETARY TRANSIT // LOADING{dots}</span>
+            <div className="flex items-center gap-2 text-slate-300 truncate">
+              <Compass className="w-3.5 h-3.5 text-cyan-400 animate-spin shrink-0" style={{ animationDuration: '6s' }} />
+              <span className="font-semibold text-slate-200 truncate">INTERPLANETARY TRANSIT // LOADING{dots}</span>
             </div>
-            <div className="flex items-baseline gap-1.5 font-mono">
-              <span className="text-[11px] text-slate-400">
+            <div className="flex items-baseline gap-1.5 font-mono shrink-0 ml-2">
+              <span className="text-[10px] sm:text-[11px] text-slate-400 hidden xs:inline">
                 {(progress * 2.25).toFixed(1)}M / 225.4M KM
               </span>
-              <span className="text-cyan-300 font-bold text-sm tracking-wider ml-1">
+              <span className="text-cyan-300 font-bold text-xs sm:text-sm tracking-wider ml-1">
                 {progress}%
               </span>
             </div>
@@ -445,21 +446,21 @@ export function SolarSystemLoadingScreen({ onComplete }) {
           </div>
 
           {/* Telemetry Stage Readout */}
-          <div className="flex items-center justify-between text-[11px] font-mono text-slate-400 pt-0.5">
+          <div className="flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-slate-400 pt-0.5">
             <div className="flex items-center gap-2 truncate">
               <Radio className="w-3.5 h-3.5 text-cyan-400 shrink-0 animate-pulse" />
               <span className="text-slate-300 truncate tracking-tight">{stageText}</span>
             </div>
-            <span className="text-[10px] text-emerald-400 font-bold shrink-0 ml-3">
+            <span className="text-[9px] sm:text-[10px] text-emerald-400 font-bold shrink-0 ml-2">
               [DSN LIVE]
             </span>
           </div>
         </div>
 
         {/* Footer Meta Details */}
-        <div className="w-full max-w-xl mt-3 flex items-center justify-between text-[9px] font-mono text-slate-500 px-1 pointer-events-none">
+        <div className="w-full max-w-xl mt-2.5 flex flex-col sm:flex-row items-center justify-between text-[8px] sm:text-[9px] font-mono text-slate-500 px-1 pointer-events-none gap-0.5">
           <span>EPHEMERIS: JPL DE440 / IAU 2015</span>
-          <span>NASA SPACE APPS CHALLENGE 2026 // SINGULAR ANOMALY</span>
+          <span>NASA SPACE APPS 2026 // SINGULAR ANOMALY</span>
         </div>
       </footer>
     </div>
