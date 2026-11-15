@@ -22,9 +22,8 @@ function getGenAI() {
 
 const CANDIDATE_MODELS = [
   'gemini-flash-lite-latest',
-  'gemini-2.5-flash-lite',
-  'gemini-3.8-flash-lite',
-  'gemini-flash-latest'
+  'gemini-flash-latest',
+  'gemini-2.5-flash-lite'
 ];
 
 /**
