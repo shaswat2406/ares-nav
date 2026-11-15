@@ -173,31 +173,35 @@ export function GuidedTourWalkthrough({ isOpen, onClose, onSwitchView }) {
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm select-none animate-in fade-in duration-200">
-      {/* Tour Card Box */}
+      {/* Tour Popup Card */}
       <div
-        className={`relative w-full max-w-lg bg-[#040816]/95 border ${step.borderColor} rounded-2xl p-6 shadow-2xl backdrop-blur-xl space-y-4`}
+        className={`relative w-full max-w-md bg-[#040816]/95 border ${step.borderColor} rounded-2xl p-5 md:p-6 shadow-2xl backdrop-blur-xl space-y-4`}
         style={{ boxShadow: `0 10px 40px ${step.glowColor}` }}
       >
-        {/* Top Header: Step Counter & Skip Tour Button */}
+        {/* Top Header: 1/N Step Badge & Skip Option */}
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2.5">
             <div className={`p-1.5 rounded-lg bg-slate-900 border ${step.borderColor}`}>
               <StepIcon className={`w-4 h-4 ${step.iconColor}`} />
             </div>
-            <div>
-              <span className="text-[10px] font-mono tracking-widest text-cyan-400 uppercase font-bold">
-                MISSION TOUR // STEP {currentStep + 1} OF {TOUR_STEPS.length}
+            {/* 1 / N Steps Indicator */}
+            <div className="flex items-center gap-2">
+              <span className="px-2.5 py-0.5 rounded-full bg-cyan-950 border border-cyan-500/60 text-cyan-300 font-mono font-bold text-xs tracking-wider shadow-[0_0_10px_rgba(0,240,255,0.3)]">
+                {currentStep + 1} / {TOUR_STEPS.length}
+              </span>
+              <span className="text-[10px] font-mono tracking-widest text-slate-400 uppercase font-semibold hidden sm:inline">
+                MISSION TOUR
               </span>
             </div>
           </div>
 
-          {/* Prominent SKIP TOUR Button */}
+          {/* Skip Option (Top) */}
           <button
             onClick={handleSkip}
-            className="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-rose-950/60 border border-slate-700 hover:border-rose-500/60 text-slate-400 hover:text-rose-300 text-xs font-mono transition-all cursor-pointer flex items-center gap-1.5 shadow"
-            title="Skip tour and return to mission"
+            className="px-2 py-1 rounded-lg bg-slate-900/80 hover:bg-rose-950/60 border border-slate-700/80 hover:border-rose-500/60 text-slate-400 hover:text-rose-300 text-xs font-mono transition-all cursor-pointer flex items-center gap-1 shadow"
+            title="Skip tour (Esc)"
           >
-            <span>SKIP TOUR</span>
+            <span>Skip</span>
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -218,7 +222,7 @@ export function GuidedTourWalkthrough({ isOpen, onClose, onSwitchView }) {
           </p>
         </div>
 
-        {/* Step Indicator Dots */}
+        {/* Step Indicator Progress Dots */}
         <div className="flex items-center justify-center gap-1.5 pt-1">
           {TOUR_STEPS.map((s, idx) => (
             <button
@@ -237,32 +241,41 @@ export function GuidedTourWalkthrough({ isOpen, onClose, onSwitchView }) {
           ))}
         </div>
 
-        {/* Bottom Actions: Back / Next / Finish */}
-        <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
+        {/* Bottom Actions: Skip Option on Left | Back & Next on Right */}
+        <div className="flex items-center justify-between pt-3 border-t border-slate-800/80">
           <button
-            onClick={handlePrev}
-            disabled={currentStep === 0}
-            className={`px-3 py-1.5 rounded-xl border text-xs font-mono flex items-center gap-1 transition-all ${
-              currentStep === 0
-                ? 'opacity-30 border-slate-800 text-slate-600 pointer-events-none'
-                : 'border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white bg-slate-900 cursor-pointer'
-            }`}
+            onClick={handleSkip}
+            className="px-3 py-1.5 rounded-xl border border-slate-800 hover:border-rose-500/60 text-slate-400 hover:text-rose-300 text-xs font-mono transition-all cursor-pointer flex items-center gap-1 hover:bg-rose-950/30"
           >
-            <ChevronLeft className="w-3.5 h-3.5" />
-            <span>BACK</span>
+            <span>Skip</span>
           </button>
 
-          <button
-            onClick={handleNext}
-            className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-mono font-bold text-xs flex items-center gap-1.5 shadow-[0_0_15px_rgba(0,240,255,0.4)] transition-all cursor-pointer"
-          >
-            <span>{isLast ? 'FINISH TOUR' : 'NEXT'}</span>
-            {isLast ? (
-              <CheckCircle className="w-3.5 h-3.5" />
-            ) : (
-              <ChevronRight className="w-3.5 h-3.5" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrev}
+              disabled={currentStep === 0}
+              className={`px-3 py-1.5 rounded-xl border text-xs font-mono flex items-center gap-1 transition-all ${
+                currentStep === 0
+                  ? 'opacity-30 border-slate-800 text-slate-600 pointer-events-none'
+                  : 'border-slate-700 hover:border-slate-500 text-slate-300 hover:text-white bg-slate-900 cursor-pointer'
+              }`}
+            >
+              <ChevronLeft className="w-3.5 h-3.5" />
+              <span>Back</span>
+            </button>
+
+            <button
+              onClick={handleNext}
+              className="px-4 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-mono font-bold text-xs flex items-center gap-1.5 shadow-[0_0_15px_rgba(0,240,255,0.4)] transition-all cursor-pointer"
+            >
+              <span>{isLast ? 'Finish' : 'Next'}</span>
+              {isLast ? (
+                <CheckCircle className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronRight className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

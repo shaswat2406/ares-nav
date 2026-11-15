@@ -35,31 +35,9 @@ function MartianAtmosphere({ dustStorm }) {
   );
 }
 
-// Photorealistic Jezero Crater Surface Terrain with Photographic Mars PBR Textures
+// Photorealistic Jezero Crater Surface Terrain
 function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
   const meshRef = useRef();
-
-  // Load high-resolution photographic Mars PBR texture maps
-  const textures = useMemo(() => {
-    const loader = new THREE.TextureLoader();
-    const albedo = loader.load('/textures/mars_surface_albedo.jpg', (tex) => {
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(16, 16);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.needsUpdate = true;
-    });
-    const normal = loader.load('/textures/mars_surface_normal.jpg', (tex) => {
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(16, 16);
-      tex.needsUpdate = true;
-    });
-    const roughness = loader.load('/textures/mars_surface_roughness.jpg', (tex) => {
-      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-      tex.repeat.set(16, 16);
-      tex.needsUpdate = true;
-    });
-    return { albedo, normal, roughness };
-  }, []);
 
   const { geometry } = useMemo(() => {
     const size = 160;
@@ -124,35 +102,32 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
       const ny = normals.getY(i);
       const slopeDeg = Math.acos(Math.min(1.0, Math.max(0.0, ny))) * (180 / Math.PI);
 
-      // Bright, Vibrant Martian Orange Regolith
-      let r = 0.96 + (y * 0.016);
-      let g = 0.52 + (y * 0.012);
+      let r = 0.72 + (y * 0.02);
+      let g = 0.31 + (y * 0.01);
       let b = 0.14;
 
       if (y < -2.0) {
-        // Subtle basalt darkening in floor depressions
-        r *= 0.86;
-        g *= 0.78;
-        b *= 0.70;
+        r *= 0.75;
+        g *= 0.65;
+        b *= 0.60;
       }
 
       if (x < -10 && x > -50 && Math.abs(z) < 30) {
-        // Western Delta bright golden silt
-        r = 1.00;
-        g = 0.58;
-        b = 0.20;
+        r = 0.78;
+        g = 0.42;
+        b = 0.22;
       }
 
       if (activeLayers.hazards && slopeDeg > 15.0) {
-        r = Math.min(1.0, r * 1.35 + 0.3);
+        r = Math.min(1.0, r * 1.4 + 0.3);
         g *= 0.3;
         b *= 0.2;
       }
 
       if (activeLayers.mineralogy && ((x < -15 && x > -35 && Math.abs(z) < 18) || (Math.sqrt((x - 14)**2 + (z - 22)**2) < 5.0))) {
-        r = 0.68;
-        g = 0.35;
-        b = 0.72;
+        r = 0.58;
+        g = 0.28;
+        b = 0.62;
       }
 
       colors[i * 3] = Math.min(1.0, Math.max(0.0, r));
@@ -176,11 +151,8 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
     <mesh ref={meshRef} geometry={geometry} onClick={handleClick} receiveShadow castShadow>
       <meshStandardMaterial
         vertexColors
-        normalMap={textures.normalMap}
-        normalScale={new THREE.Vector2(0.65, 0.65)}
-        roughnessMap={textures.roughness}
-        roughness={dustStorm ? 0.90 : 0.68}
-        metalness={0.08}
+        roughness={dustStorm ? 0.95 : 0.84}
+        metalness={0.12}
         wireframe={activeLayers.topography}
       />
     </mesh>
@@ -680,20 +652,16 @@ export function Mars3DView({
         shadows
         gl={{ antialias: true }}
       >
-        {/* Infinite Horizon: Smoothly dissolves terrain boundaries into deep space */}
-        <color attach="background" args={['#010206']} />
-        <fogExp2 attach="fog" args={[dustStorm ? '#2a0e04' : '#010206', dustStorm ? 0.016 : 0.007]} />
-
         <MartianAtmosphere dustStorm={dustStorm} />
 
-        <ambientLight intensity={dustStorm ? 0.45 : 0.72} color="#fff7ed" />
+        <ambientLight intensity={dustStorm ? 0.3 : 0.55} />
         <directionalLight
           position={[60, 75, 45]}
-          intensity={dustStorm ? 1.8 : 3.4}
+          intensity={dustStorm ? 1.4 : 2.8}
           color={dustStorm ? "#ea580c" : "#ffffff"}
           castShadow
         />
-        <directionalLight position={[-45, -20, -45]} intensity={0.65} color="#ea580c" />
+        <directionalLight position={[-45, -20, -45]} intensity={0.5} color="#c24810" />
 
         {/* Camera Rig (Visor vs Orbit) */}
         <CameraRig
