@@ -25,3 +25,11 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Media & build scratch files
+scripts/__pycache__/
+scripts/soundtrack.wav
+scripts/video_assets/
+/ARES_NAV_MISSION_DEMO_30S.mp4
+*.png
+!src/assets/*.png
