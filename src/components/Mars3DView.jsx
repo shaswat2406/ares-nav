@@ -124,32 +124,35 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
       const ny = normals.getY(i);
       const slopeDeg = Math.acos(Math.min(1.0, Math.max(0.0, ny))) * (180 / Math.PI);
 
-      let r = 0.72 + (y * 0.02);
-      let g = 0.31 + (y * 0.01);
-      let b = 0.14;
+      // Authentic Warm Martian Ochre/Orange Regolith
+      let r = 0.86 + (y * 0.016);
+      let g = 0.46 + (y * 0.012);
+      let b = 0.16;
 
       if (y < -2.0) {
-        r *= 0.75;
-        g *= 0.65;
-        b *= 0.60;
+        // Subtle basalt darkening in floor depressions
+        r *= 0.80;
+        g *= 0.72;
+        b *= 0.65;
       }
 
       if (x < -10 && x > -50 && Math.abs(z) < 30) {
-        r = 0.78;
-        g = 0.42;
+        // Western Delta warm golden silt
+        r = 0.90;
+        g = 0.52;
         b = 0.22;
       }
 
       if (activeLayers.hazards && slopeDeg > 15.0) {
-        r = Math.min(1.0, r * 1.4 + 0.3);
+        r = Math.min(1.0, r * 1.35 + 0.3);
         g *= 0.3;
         b *= 0.2;
       }
 
       if (activeLayers.mineralogy && ((x < -15 && x > -35 && Math.abs(z) < 18) || (Math.sqrt((x - 14)**2 + (z - 22)**2) < 5.0))) {
-        r = 0.58;
-        g = 0.28;
-        b = 0.62;
+        r = 0.68;
+        g = 0.35;
+        b = 0.72;
       }
 
       colors[i * 3] = Math.min(1.0, Math.max(0.0, r));
@@ -173,9 +176,8 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
     <mesh ref={meshRef} geometry={geometry} onClick={handleClick} receiveShadow castShadow>
       <meshStandardMaterial
         vertexColors
-        map={textures.albedo}
         normalMap={textures.normalMap}
-        normalScale={new THREE.Vector2(1.2, 1.2)}
+        normalScale={new THREE.Vector2(0.8, 0.8)}
         roughnessMap={textures.roughness}
         roughness={dustStorm ? 0.95 : 0.84}
         metalness={0.12}

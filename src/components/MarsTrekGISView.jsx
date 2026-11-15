@@ -188,7 +188,7 @@ export function MarsTrekGISView() {
   const resetToOverview = () => {
     sfx.click();
     if (leafletMap) {
-      leafletMap.flyTo([18.4447, 77.4508], 9.5, { duration: 1.2 });
+      leafletMap.flyTo([18.4447, 77.4508], 7.8, { duration: 1.2 });
     }
   };
 
@@ -233,11 +233,11 @@ export function MarsTrekGISView() {
   return (
     <div className="relative w-full h-full min-h-screen bg-[#040816] text-slate-200 font-mono select-none overflow-hidden flex flex-col">
       {/* ── High-Contrast Interactive Planetary GIS Canvas ── */}
-      {/* Starting at zoom 9.5 gives a stunning wide overview of the entire Jezero Crater basin */}
+      {/* Starting at zoom 7.8 gives a stunning wide overview of the entire Jezero Crater regional basin */}
       <MapContainer
         ref={mapRef}
         center={centerPos}
-        zoom={9.5}
+        zoom={7.8}
         maxZoom={15}
         minZoom={5}
         scrollWheelZoom={true}
