@@ -16,7 +16,7 @@ import { MissionSimulator } from './components/MissionSimulator';
 import { ScienceTargetPanel } from './components/ScienceTargetPanel';
 import { DataExplorer } from './components/DataExplorer';
 import { AIMissionCommander } from './components/AIMissionCommander';
-import { MarsLoadingScreen } from './components/MarsLoadingScreen';
+import { SolarSystemLoadingScreen } from './components/SolarSystemLoadingScreen';
 import { PRECOMPUTED_ROUTES, SCIENCE_TARGETS } from './data/jezeroData';
 import { computeCustomAStarRoute } from './utils/astarEngine';
 import { compareAllRoutes } from './utils/pathfindingEngine';
@@ -150,8 +150,8 @@ function App() {
 
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#010206] select-none">
-      {/* 🚀 Cinematic Mars Orbital Descent Loading Screen */}
-      {isLoading && <MarsLoadingScreen onComplete={() => setIsLoading(false)} />}
+      {/* 🌌 Cinematic Heliocentric Solar System Transit Loading Screen */}
+      {isLoading && <SolarSystemLoadingScreen onComplete={() => setIsLoading(false)} />}
 
       {/* ============================================================== */}
       {/* 1. FULL-BLEED EDGE-TO-EDGE 3D VIEWPORT CANVAS (100vw x 100vh) */}
