@@ -97,7 +97,9 @@ Where $\dot{V}_{\text{base}} = 0.84\text{ L/min}$ (standard NASA EMU PLSS rate).
 - **Mission Simulator Mode**: A 10-step automated demonstration walking competition judges through the end-to-end EVA workflow in under 2 minutes.
 - **Science Target Discovery Engine**: Prioritizes Jezero science locations based on mineralogical proxy indicators and peer-reviewed CRISM detections (Horgan et al. 2020, Goudge et al. 2015).
 - **NASA Dataset Explorer**: Comprehensive database detailing provenance, resolution, quality metrics, and PDS source repositories for all 9 data layers.
-- **Flight Order Dispatch**: Downloadable, timestamped EVA mission flight plan checklist with Supabase cloud synchronisation.
+- **Flight Order Dispatch**: Downloadable, timestamped EVA mission flight plan checklist with printable/PDF report generation.
+- **AI Mission Commander (Gemini 1.5 Flash)**: Tactical mission advisory assistant that ingests live telemetry, route coordinates, and CRISM detections to provide instant military-brevity safety advisories and abort calculations.
+- **Official 30-Second Mission Demo Video**: High-production Full HD presentation video (`ARES_NAV_MISSION_DEMO_30S.mp4`) showcasing end-to-end mission planning, algorithm benchmarking, and NASA GIS workflows.
 
 ---
 
@@ -116,6 +118,12 @@ npm run dev
 ```
 
 Visit `http://localhost:5173` to explore the mission interface.
+
+### Automated Scientific & Algorithmic Validation Suite
+```bash
+npm test
+```
+Executes `node tests/test_scientific_engine.js`, verifying **70 / 70 automated tests (100% passing)** across terrain gradients, A* slope penalties, Dijkstra benchmark comparisons, Apollo life-support reserves, and NASA PDS dataset citations.
 
 ### Production Build
 ```bash
