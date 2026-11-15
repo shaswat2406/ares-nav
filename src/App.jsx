@@ -17,6 +17,7 @@ import { ScienceTargetPanel } from './components/ScienceTargetPanel';
 import { DataExplorer } from './components/DataExplorer';
 import { AIMissionCommander } from './components/AIMissionCommander';
 import { SolarSystemLoadingScreen } from './components/SolarSystemLoadingScreen';
+import { GuidedTourWalkthrough } from './components/GuidedTourWalkthrough';
 import { PRECOMPUTED_ROUTES, SCIENCE_TARGETS } from './data/jezeroData';
 import { computeCustomAStarRoute } from './utils/astarEngine';
 import { compareAllRoutes } from './utils/pathfindingEngine';
@@ -41,7 +42,8 @@ import {
   Sliders,
   Sparkles,
   BarChart3,
-  Bot
+  Bot,
+  Compass
 } from 'lucide-react';
 
 function App() {
@@ -80,6 +82,7 @@ function App() {
   const [isRouteCompareOpen, setIsRouteCompareOpen] = useState(false);
 
   // Modals State
+  const [isTourOpen, setIsTourOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isLabOpen, setIsLabOpen] = useState(false);
   const [isSpecsOpen, setIsSpecsOpen] = useState(false);
@@ -269,6 +272,19 @@ function App() {
               3D GLOBE
             </button>
           </div>
+
+          {/* 🧭 Guided Mission Tour (Skipable) */}
+          <button
+            onClick={() => {
+              sfx.click();
+              setIsTourOpen(true);
+            }}
+            className="hud-glass px-3 py-1.5 rounded-xl text-xs font-mono font-bold text-amber-300 hover:text-amber-100 border-amber-500/40 flex items-center gap-1.5 cursor-pointer shadow-[0_0_15px_rgba(245,158,11,0.25)] hover:border-amber-300 hover:shadow-[0_0_20px_rgba(245,158,11,0.5)] transition-all"
+            title="Take a quick interactive guided tour of ARES-NAV (can be skipped anytime)"
+          >
+            <Compass className="w-3.5 h-3.5 text-amber-400" />
+            TOUR
+          </button>
 
           {/* 🤖 AI Mission Commander */}
           <button
@@ -576,6 +592,13 @@ function App() {
       <DataExplorer
         isOpen={isDataExplorerOpen}
         onClose={() => setIsDataExplorerOpen(false)}
+      />
+
+      {/* Guided Tour Walkthrough (Skipable) */}
+      <GuidedTourWalkthrough
+        isOpen={isTourOpen}
+        onClose={() => setIsTourOpen(false)}
+        onSwitchView={(mode) => setViewMode(mode)}
       />
 
       {/* ============================================================== */}
