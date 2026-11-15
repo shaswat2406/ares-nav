@@ -35,8 +35,17 @@ const PLANETS = [
 export function SolarSystemLoadingScreen({ onComplete }) {
   const [progress, setProgress] = useState(0);
   const [stageText, setStageText] = useState(TELEMETRY_STAGES[0].text);
+  const [dots, setDots] = useState('...');
   const [isFadingOut, setIsFadingOut] = useState(false);
   const canvasRef = useRef(null);
+
+  // Animated cycling dots: . -> .. -> ... -> ....
+  useEffect(() => {
+    const dotInterval = setInterval(() => {
+      setDots(prev => (prev.length >= 4 ? '.' : prev + '.'));
+    }, 320);
+    return () => clearInterval(dotInterval);
+  }, []);
 
   // Handle loading progress bar timer (2.6s total for silky smooth transit)
   useEffect(() => {
@@ -399,12 +408,18 @@ export function SolarSystemLoadingScreen({ onComplete }) {
 
       {/* ── Bottom Section: Loading Progress & Real-time Transit Telemetry ── */}
       <footer className="relative z-10 pb-8 px-6 md:px-12 flex flex-col items-center">
+        {/* Animated Loading Text Banner */}
+        <div className="flex items-center gap-2 mb-2.5 px-3.5 py-1 rounded-full bg-slate-950/80 border border-cyan-500/40 text-cyan-300 font-mono text-xs tracking-widest uppercase shadow-[0_0_20px_rgba(0,240,255,0.25)] backdrop-blur-md">
+          <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+          <span className="font-bold">LOADING MISSION DATA{dots}</span>
+        </div>
+
         <div className="w-full max-w-xl space-y-2.5 bg-slate-950/80 border border-slate-800/80 rounded-2xl p-4 md:p-5 shadow-[0_10px_35px_rgba(0,0,0,0.8)] backdrop-blur-md">
           {/* Progress Header */}
           <div className="flex items-center justify-between text-xs font-mono">
             <div className="flex items-center gap-2 text-slate-300">
               <Compass className="w-3.5 h-3.5 text-cyan-400 animate-spin" style={{ animationDuration: '6s' }} />
-              <span className="font-semibold text-slate-200">INTERPLANETARY TRANSIT PROGRESS</span>
+              <span className="font-semibold text-slate-200">INTERPLANETARY TRANSIT // LOADING{dots}</span>
             </div>
             <div className="flex items-baseline gap-1.5 font-mono">
               <span className="text-[11px] text-slate-400">
