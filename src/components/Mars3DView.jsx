@@ -191,30 +191,84 @@ function IndianAstronautModel({ progressPercent, route, isFirstPerson }) {
   const rightLegRef = useRef();
   const leftArmRef = useRef();
   const rightArmRef = useRef();
+  const beaconLightRef = useRef();
 
-  const pos = useMemo(() => {
+  // Position calculation, orientation towards next waypoint, and collision avoidance at stop points
+  const { pos, rotY } = useMemo(() => {
     const totalWps = route.waypoints.length;
     const index = Math.min(
       Math.floor((progressPercent / 100) * (totalWps - 1)),
       totalWps - 1
     );
+    const nextIndex = Math.min(index + 1, totalWps - 1);
     const wp = route.waypoints[index];
-    const x = (wp[1] - 77.4508) * 800;
-    const z = -(wp[0] - 18.4447) * 800;
-    return [x, 0.0, z];
+    const nextWp = route.waypoints[nextIndex];
+
+    let x = (wp[1] - 77.4508) * 800;
+    let z = -(wp[0] - 18.4447) * 800;
+
+    let targetX = (nextWp[1] - 77.4508) * 800;
+    let targetZ = -(nextWp[0] - 18.4447) * 800;
+
+    // Avoid colliding with HAB ALPHA pin at the start (progress = 0%)
+    if (progressPercent <= 1) {
+      x += 2.2;
+      z += 2.0;
+    } else if (progressPercent >= 98) {
+      // Stand off 2.4 meters before the destination waypoint pin so astronaut stands in front facing it
+      const prevIndex = Math.max(0, totalWps - 2);
+      const prevWp = route.waypoints[prevIndex];
+      const prevX = (prevWp[1] - 77.4508) * 800;
+      const prevZ = -(prevWp[0] - 18.4447) * 800;
+      const dx = x - prevX;
+      const dz = z - prevZ;
+      const dist = Math.hypot(dx, dz) || 1;
+      x -= (dx / dist) * 2.4;
+      z -= (dz / dist) * 2.4;
+      targetX = (wp[1] - 77.4508) * 800;
+      targetZ = -(wp[0] - 18.4447) * 800;
+    }
+
+    const dx = targetX - x;
+    const dz = targetZ - z;
+    const angle = Math.atan2(dx, dz);
+
+    return { pos: [x, 0.0, z], rotY: angle };
   }, [progressPercent, route]);
 
-  // Dynamic walking gait animation
+  // Dynamic walking gait animation & idle breathing
   useFrame((state) => {
+    const time = state.clock.getElapsedTime();
     if (groupRef.current) {
-      const time = state.clock.getElapsedTime() * 8.0;
-      if (leftLegRef.current && rightLegRef.current) {
-        leftLegRef.current.rotation.x = Math.sin(time) * 0.45;
-        rightLegRef.current.rotation.x = -Math.sin(time) * 0.45;
+      const isWalking = progressPercent > 0 && progressPercent < 98;
+      const walkCycle = time * 8.0;
+
+      if (isWalking) {
+        // Vertical hip bob while walking
+        groupRef.current.position.y = Math.abs(Math.sin(walkCycle)) * 0.07;
+        if (leftLegRef.current && rightLegRef.current) {
+          leftLegRef.current.rotation.x = Math.sin(walkCycle) * 0.52;
+          rightLegRef.current.rotation.x = -Math.sin(walkCycle) * 0.52;
+        }
+        if (leftArmRef.current && rightArmRef.current) {
+          leftArmRef.current.rotation.x = -Math.sin(walkCycle) * 0.42;
+          rightArmRef.current.rotation.x = Math.sin(walkCycle) * 0.42;
+        }
+      } else {
+        // Idle gentle breathing motion
+        groupRef.current.position.y = Math.sin(time * 1.8) * 0.02;
+        if (leftLegRef.current && rightLegRef.current) {
+          leftLegRef.current.rotation.x = 0;
+          rightLegRef.current.rotation.x = 0;
+        }
+        if (leftArmRef.current && rightArmRef.current) {
+          leftArmRef.current.rotation.x = 0.12;
+          rightArmRef.current.rotation.x = 0.12;
+        }
       }
-      if (leftArmRef.current && rightArmRef.current) {
-        leftArmRef.current.rotation.x = -Math.sin(time) * 0.4;
-        rightArmRef.current.rotation.x = Math.sin(time) * 0.4;
+
+      if (beaconLightRef.current) {
+        beaconLightRef.current.intensity = Math.sin(time * 5.0) > 0 ? 1.6 : 0.2;
       }
     }
   });
@@ -222,83 +276,265 @@ function IndianAstronautModel({ progressPercent, route, isFirstPerson }) {
   if (isFirstPerson) return null; // Inside the helmet in POV mode
 
   return (
-    <group ref={groupRef} position={pos}>
-      {/* 1. Torso / White Pressurized Extravehicular Suit */}
-      <mesh position={[0, 1.45, 0]}>
-        <cylinderGeometry args={[0.38, 0.32, 0.85, 16]} />
-        <meshStandardMaterial color="#f8fafc" roughness={0.4} metalness={0.2} />
+    <group ref={groupRef} position={pos} rotation={[0, rotY, 0]}>
+      {/* 1. Torso: Bulky Pressurized Extravehicular Suit (Hard Upper Torso / HUT) */}
+      <mesh position={[0, 1.48, 0]}>
+        <cylinderGeometry args={[0.42, 0.35, 0.88, 18]} />
+        <meshStandardMaterial color="#f8fafc" roughness={0.35} metalness={0.25} />
       </mesh>
 
-      {/* 2. Primary Life Support System (PLSS Backpack) */}
-      <mesh position={[0, 1.5, -0.32]}>
-        <boxGeometry args={[0.55, 0.75, 0.28]} />
-        <meshStandardMaterial color="#cbd5e1" roughness={0.5} metalness={0.4} />
+      {/* Waist Bearing / Lower Torso Assembly (LTA) Ring */}
+      <mesh position={[0, 1.05, 0]}>
+        <cylinderGeometry args={[0.36, 0.36, 0.08, 18]} />
+        <meshStandardMaterial color="#334155" roughness={0.5} metalness={0.8} />
       </mesh>
 
-      {/* 3. 🇮🇳 Indian Tricolour Shoulder Mission Patch */}
-      <mesh position={[0.4, 1.65, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[0.18, 0.12]} />
-        <meshBasicMaterial color="#ff9933" /> {/* Saffron */}
-      </mesh>
-      <mesh position={[0.401, 1.59, 0]} rotation={[0, Math.PI / 2, 0]}>
-        <planeGeometry args={[0.18, 0.04]} />
-        <meshBasicMaterial color="#138808" /> {/* Green */}
-      </mesh>
-
-      {/* 4. Helmet & Gold-Coated Thermal Visor */}
-      <group position={[0, 2.1, 0]}>
-        {/* Outer White Helmet Shell */}
+      {/* 2. Chest Display and Control Module (DCM) */}
+      <group position={[0, 1.5, 0.34]}>
+        {/* Main DCM Unit Box */}
         <mesh>
-          <sphereGeometry args={[0.34, 24, 24]} />
-          <meshStandardMaterial color="#f1f5f9" roughness={0.3} metalness={0.3} />
+          <boxGeometry args={[0.34, 0.36, 0.14]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.4} metalness={0.7} />
         </mesh>
-        {/* Reflective Gold Coated Visor Shield (Filters Mars harsh UV/IR) */}
+        {/* Digital Telemetry Screen */}
+        <mesh position={[0, 0.06, 0.075]}>
+          <planeGeometry args={[0.22, 0.12]} />
+          <meshStandardMaterial color="#00f0ff" emissive="#00f0ff" emissiveIntensity={0.8} roughness={0.1} />
+        </mesh>
+        {/* Pressure Gauge & Toggle Valves */}
+        <mesh position={[-0.08, -0.09, 0.08]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.035, 0.035, 0.03, 12]} />
+          <meshStandardMaterial color="#94a3b8" metalness={0.9} />
+        </mesh>
+        <mesh position={[0.08, -0.09, 0.08]} rotation={[Math.PI / 2, 0, 0]}>
+          <cylinderGeometry args={[0.025, 0.025, 0.04, 8]} />
+          <meshStandardMaterial color="#ef4444" emissive="#ef4444" emissiveIntensity={0.5} />
+        </mesh>
+      </group>
+
+      {/* Dual Corrugated Life Support Umbilical Hoses (Shoulders to Chest) */}
+      <mesh position={[-0.22, 1.72, 0.14]} rotation={[0.4, -0.3, 0]}>
+        <torusGeometry args={[0.18, 0.035, 8, 16, Math.PI * 0.9]} />
+        <meshStandardMaterial color="#0284c7" roughness={0.6} />
+      </mesh>
+      <mesh position={[0.22, 1.72, 0.14]} rotation={[0.4, 0.3, 0]}>
+        <torusGeometry args={[0.18, 0.035, 8, 16, Math.PI * 0.9]} />
+        <meshStandardMaterial color="#dc2626" roughness={0.6} />
+      </mesh>
+
+      {/* 3. Primary Life Support System (PLSS Backpack) */}
+      <group position={[0, 1.52, -0.36]}>
+        {/* Main Backpack Chassis */}
+        <mesh>
+          <boxGeometry args={[0.62, 0.86, 0.32]} />
+          <meshStandardMaterial color="#e2e8f0" roughness={0.45} metalness={0.4} />
+        </mesh>
+        {/* Sublimator Heat Radiation Grill */}
+        <mesh position={[0, -0.05, -0.165]}>
+          <planeGeometry args={[0.48, 0.52]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.8} />
+        </mesh>
+        {/* Dual High-Pressure Emergency Oxygen Canisters (Top) */}
+        <mesh position={[-0.18, 0.48, 0]}>
+          <cylinderGeometry args={[0.08, 0.08, 0.32, 16]} />
+          <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.2} />
+        </mesh>
+        <mesh position={[0.18, 0.48, 0]}>
+          <cylinderGeometry args={[0.08, 0.08, 0.32, 16]} />
+          <meshStandardMaterial color="#cbd5e1" metalness={0.9} roughness={0.2} />
+        </mesh>
+        {/* High-Gain Comms Antenna with Blinking Emergency Beacon */}
+        <mesh position={[0.26, 0.78, 0]}>
+          <cylinderGeometry args={[0.015, 0.015, 0.55, 8]} />
+          <meshStandardMaterial color="#475569" metalness={0.9} />
+        </mesh>
+        <mesh position={[0.26, 1.06, 0]}>
+          <sphereGeometry args={[0.04, 12, 12]} />
+          <meshStandardMaterial color="#22c55e" emissive="#22c55e" emissiveIntensity={1.8} />
+        </mesh>
+      </group>
+
+      {/* 4. Shoulder Mission Badges */}
+      {/* 🇮🇳 Indian Tricolour Shoulder Flag (Right Sleeve) */}
+      <mesh position={[0.45, 1.74, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[0.2, 0.13]} />
+        <meshBasicMaterial color="#ff9933" />
+      </mesh>
+      <mesh position={[0.451, 1.67, 0]} rotation={[0, Math.PI / 2, 0]}>
+        <planeGeometry args={[0.2, 0.045]} />
+        <meshBasicMaterial color="#138808" />
+      </mesh>
+
+      {/* ISRO-NASA Mission Patch (Left Sleeve) */}
+      <mesh position={[-0.45, 1.74, 0]} rotation={[0, -Math.PI / 2, 0]}>
+        <planeGeometry args={[0.18, 0.18]} />
+        <meshStandardMaterial color="#0284c7" emissive="#0284c7" emissiveIntensity={0.4} />
+      </mesh>
+
+      {/* 5. Extravehicular Visor Assembly (Helmet & Gold Visor) */}
+      <group position={[0, 2.18, 0]}>
+        {/* Neck Locking Ring */}
+        <mesh position={[0, -0.24, 0]}>
+          <cylinderGeometry args={[0.32, 0.34, 0.08, 20]} />
+          <meshStandardMaterial color="#0284c7" metalness={0.9} roughness={0.2} />
+        </mesh>
+        {/* White Protective Helmet Dome */}
+        <mesh>
+          <sphereGeometry args={[0.38, 28, 28]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.25} metalness={0.3} />
+        </mesh>
+        {/* Reflective Spherical Gold Visor (Filters Mars UV/IR Radiation) */}
         <mesh position={[0, 0.02, 0.16]}>
-          <sphereGeometry args={[0.26, 24, 24, 0, Math.PI * 2, 0, Math.PI / 2]} />
-          <meshStandardMaterial color="#f59e0b" roughness={0.1} metalness={0.95} emissive="#d97706" emissiveIntensity={0.3} />
+          <sphereGeometry args={[0.30, 28, 28, 0, Math.PI * 2, 0, Math.PI / 1.8]} />
+          <meshStandardMaterial
+            color="#ffb703"
+            roughness={0.04}
+            metalness={0.98}
+            emissive="#d97706"
+            emissiveIntensity={0.4}
+          />
+        </mesh>
+        {/* Dual Helmet Mounted EVA Floodlights (Left & Right Temples) */}
+        <mesh position={[-0.34, 0.12, 0.16]}>
+          <boxGeometry args={[0.08, 0.08, 0.14]} />
+          <meshStandardMaterial color="#334155" />
+        </mesh>
+        <mesh position={[-0.34, 0.12, 0.24]}>
+          <cylinderGeometry args={[0.03, 0.03, 0.02, 12]} rotation={[Math.PI / 2, 0, 0]} />
+          <meshStandardMaterial color="#e0f2fe" emissive="#e0f2fe" emissiveIntensity={2.0} />
+        </mesh>
+        <mesh position={[0.34, 0.12, 0.16]}>
+          <boxGeometry args={[0.08, 0.08, 0.14]} />
+          <meshStandardMaterial color="#334155" />
+        </mesh>
+        <mesh position={[0.34, 0.12, 0.24]}>
+          <cylinderGeometry args={[0.03, 0.03, 0.02, 12]} rotation={[Math.PI / 2, 0, 0]} />
+          <meshStandardMaterial color="#e0f2fe" emissive="#e0f2fe" emissiveIntensity={2.0} />
         </mesh>
       </group>
 
-      {/* 5. Articulated Legs */}
-      <group ref={leftLegRef} position={[-0.18, 1.05, 0]}>
-        <mesh position={[0, -0.5, 0]}>
-          <cylinderGeometry args={[0.14, 0.12, 1.0, 12]} />
-          <meshStandardMaterial color="#f8fafc" roughness={0.6} />
+      {/* 6. Articulated Pressurized Arms & EVA Gloves */}
+      <group ref={leftArmRef} position={[-0.45, 1.76, 0]}>
+        {/* Upper Arm & Shoulder Convolute Bellows Ring */}
+        <mesh position={[0, -0.06, 0]}>
+          <cylinderGeometry args={[0.16, 0.14, 0.12, 14]} />
+          <meshStandardMaterial color="#64748b" roughness={0.7} />
         </mesh>
-        {/* Boot */}
-        <mesh position={[0, -1.02, 0.08]}>
-          <boxGeometry args={[0.18, 0.16, 0.32]} />
-          <meshStandardMaterial color="#334155" roughness={0.8} />
+        <mesh position={[0, -0.32, 0]}>
+          <cylinderGeometry args={[0.13, 0.12, 0.44, 14]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.4} />
+        </mesh>
+        {/* Elbow Joint */}
+        <mesh position={[0, -0.56, 0]}>
+          <sphereGeometry args={[0.12, 12, 12]} />
+          <meshStandardMaterial color="#475569" roughness={0.7} />
+        </mesh>
+        {/* Forearm & Wrist Disconnect Ring */}
+        <mesh position={[0, -0.78, 0]}>
+          <cylinderGeometry args={[0.11, 0.10, 0.34, 14]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, -0.96, 0]}>
+          <cylinderGeometry args={[0.11, 0.11, 0.05, 14]} />
+          <meshStandardMaterial color="#dc2626" metalness={0.9} />
+        </mesh>
+        {/* Form-Fitted EVA Spacesuit Glove */}
+        <mesh position={[0, -1.08, 0.02]}>
+          <boxGeometry args={[0.14, 0.20, 0.12]} />
+          <meshStandardMaterial color="#f1f5f9" roughness={0.5} />
+        </mesh>
+        <mesh position={[0, -1.18, 0.03]}>
+          <boxGeometry args={[0.12, 0.06, 0.10]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.9} />
         </mesh>
       </group>
 
-      <group ref={rightLegRef} position={[0.18, 1.05, 0]}>
-        <mesh position={[0, -0.5, 0]}>
-          <cylinderGeometry args={[0.14, 0.12, 1.0, 12]} />
-          <meshStandardMaterial color="#f8fafc" roughness={0.6} />
+      <group ref={rightArmRef} position={[0.45, 1.76, 0]}>
+        <mesh position={[0, -0.06, 0]}>
+          <cylinderGeometry args={[0.16, 0.14, 0.12, 14]} />
+          <meshStandardMaterial color="#64748b" roughness={0.7} />
         </mesh>
-        <mesh position={[0, -1.02, 0.08]}>
-          <boxGeometry args={[0.18, 0.16, 0.32]} />
-          <meshStandardMaterial color="#334155" roughness={0.8} />
+        <mesh position={[0, -0.32, 0]}>
+          <cylinderGeometry args={[0.13, 0.12, 0.44, 14]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, -0.56, 0]}>
+          <sphereGeometry args={[0.12, 12, 12]} />
+          <meshStandardMaterial color="#475569" roughness={0.7} />
+        </mesh>
+        <mesh position={[0, -0.78, 0]}>
+          <cylinderGeometry args={[0.11, 0.10, 0.34, 14]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.4} />
+        </mesh>
+        <mesh position={[0, -0.96, 0]}>
+          <cylinderGeometry args={[0.11, 0.11, 0.05, 14]} />
+          <meshStandardMaterial color="#0284c7" metalness={0.9} />
+        </mesh>
+        {/* Form-Fitted EVA Spacesuit Glove */}
+        <mesh position={[0, -1.08, 0.02]}>
+          <boxGeometry args={[0.14, 0.20, 0.12]} />
+          <meshStandardMaterial color="#f1f5f9" roughness={0.5} />
+        </mesh>
+        <mesh position={[0, -1.18, 0.03]}>
+          <boxGeometry args={[0.12, 0.06, 0.10]} />
+          <meshStandardMaterial color="#1e293b" roughness={0.9} />
         </mesh>
       </group>
 
-      {/* 6. Articulated Arms */}
-      <group ref={leftArmRef} position={[-0.42, 1.7, 0]}>
-        <mesh position={[0, -0.35, 0]}>
-          <cylinderGeometry args={[0.11, 0.1, 0.75, 12]} />
+      {/* 7. Articulated Pressurized Legs & Planetary Regolith Overboots */}
+      <group ref={leftLegRef} position={[-0.20, 1.02, 0]}>
+        {/* Thigh */}
+        <mesh position={[0, -0.28, 0]}>
+          <cylinderGeometry args={[0.16, 0.14, 0.52, 14]} />
           <meshStandardMaterial color="#f8fafc" roughness={0.5} />
         </mesh>
-      </group>
-      <group ref={rightArmRef} position={[0.42, 1.7, 0]}>
-        <mesh position={[0, -0.35, 0]}>
-          <cylinderGeometry args={[0.11, 0.1, 0.75, 12]} />
+        {/* Knee Flex Bellows Joint */}
+        <mesh position={[0, -0.56, 0]}>
+          <sphereGeometry args={[0.14, 12, 12]} />
+          <meshStandardMaterial color="#475569" roughness={0.8} />
+        </mesh>
+        {/* Lower Leg */}
+        <mesh position={[0, -0.84, 0]}>
+          <cylinderGeometry args={[0.14, 0.13, 0.48, 14]} />
           <meshStandardMaterial color="#f8fafc" roughness={0.5} />
+        </mesh>
+        {/* Planetary Heavy-Duty Regolith Overboot */}
+        <mesh position={[0, -1.10, 0.08]}>
+          <boxGeometry args={[0.24, 0.18, 0.42]} />
+          <meshStandardMaterial color="#334155" roughness={0.85} metalness={0.3} />
+        </mesh>
+        {/* Deep Lug Tread Sole */}
+        <mesh position={[0, -1.20, 0.08]}>
+          <boxGeometry args={[0.26, 0.04, 0.44]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.95} />
+        </mesh>
+      </group>
+
+      <group ref={rightLegRef} position={[0.20, 1.02, 0]}>
+        <mesh position={[0, -0.28, 0]}>
+          <cylinderGeometry args={[0.16, 0.14, 0.52, 14]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.5} />
+        </mesh>
+        <mesh position={[0, -0.56, 0]}>
+          <sphereGeometry args={[0.14, 12, 12]} />
+          <meshStandardMaterial color="#475569" roughness={0.8} />
+        </mesh>
+        <mesh position={[0, -0.84, 0]}>
+          <cylinderGeometry args={[0.14, 0.13, 0.48, 14]} />
+          <meshStandardMaterial color="#f8fafc" roughness={0.5} />
+        </mesh>
+        <mesh position={[0, -1.10, 0.08]}>
+          <boxGeometry args={[0.24, 0.18, 0.42]} />
+          <meshStandardMaterial color="#334155" roughness={0.85} metalness={0.3} />
+        </mesh>
+        <mesh position={[0, -1.20, 0.08]}>
+          <boxGeometry args={[0.26, 0.04, 0.44]} />
+          <meshStandardMaterial color="#0f172a" roughness={0.95} />
         </mesh>
       </group>
 
       {/* Interactive Floating Nameplate */}
-      <Html distanceFactor={30} position={[0, 2.7, 0]} center>
+      <Html distanceFactor={30} position={[0, 2.9, 0]} center>
         <div className="bg-slate-950/95 text-cyan-300 border border-cyan-400 px-2.5 py-0.5 rounded text-[10px] font-mono whitespace-nowrap shadow-2xl font-bold flex items-center gap-1.5 backdrop-blur pointer-events-none glow-cyan">
           <span className="text-xs">🇮🇳</span>
           <span>ASTRONAUT: SHASWAT SINHA (ISRO-NASA)</span>
@@ -308,30 +544,35 @@ function IndianAstronautModel({ progressPercent, route, isFirstPerson }) {
   );
 }
 
-// Hologram Waypoints
+// Hologram Waypoints (Elevated Floating GPS Navigation Beacon)
 function HologramWaypointPin({ position, label, subtext, color, onClick, showLabels }) {
   const [hovered, setHovered] = useState(false);
 
   return (
     <group position={position}>
-      <Float speed={2.5} rotationIntensity={0.2} floatIntensity={0.4}>
-        <mesh position={[0, 2.2, 0]}>
-          <octahedronGeometry args={[0.9, 0]} />
-          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={hovered ? 1.8 : 1.1} />
-        </mesh>
-        <mesh position={[0, 1.1, 0]}>
-          <cylinderGeometry args={[0.07, 0.07, 2.2]} />
-          <meshBasicMaterial color={color} />
+      {/* Floating Holographic Crystal Beacon (Elevated to y=4.5 so it never collides with astronaut at ground level) */}
+      <Float speed={2.5} rotationIntensity={0.25} floatIntensity={0.5}>
+        <mesh position={[0, 4.5, 0]}>
+          <octahedronGeometry args={[0.85, 0]} />
+          <meshStandardMaterial color={color} emissive={color} emissiveIntensity={hovered ? 2.0 : 1.2} />
         </mesh>
       </Float>
 
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.1, 0]}>
-        <ringGeometry args={[0.8, 1.6, 24]} />
-        <meshBasicMaterial color={color} transparent opacity={0.4} side={THREE.DoubleSide} />
+      {/* Transparent Holographic Vertical Positioning Light Beam */}
+      <mesh position={[0, 2.2, 0]}>
+        <cylinderGeometry args={[0.04, 0.08, 4.4, 12]} />
+        <meshBasicMaterial color={color} transparent opacity={0.35} />
       </mesh>
 
+      {/* Ground Projection Ring */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.12, 0]}>
+        <ringGeometry args={[0.8, 1.8, 24]} />
+        <meshBasicMaterial color={color} transparent opacity={0.45} side={THREE.DoubleSide} />
+      </mesh>
+
+      {/* Waypoint Label (Elevated above astronaut nameplate) */}
       {(showLabels || hovered) && (
-        <Html distanceFactor={35} position={[0, 3.8, 0]} center>
+        <Html distanceFactor={38} position={[0, 5.8, 0]} center>
           <div
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
