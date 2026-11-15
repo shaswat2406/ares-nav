@@ -82,7 +82,7 @@ function App() {
   const [isRouteCompareOpen, setIsRouteCompareOpen] = useState(false);
 
   // Modals State
-  const [isTourOpen, setIsTourOpen] = useState(false);
+  const [isTourOpen, setIsTourOpen] = useState(true);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isLabOpen, setIsLabOpen] = useState(false);
   const [isSpecsOpen, setIsSpecsOpen] = useState(false);
@@ -154,7 +154,14 @@ function App() {
   return (
     <div className="relative w-screen h-screen overflow-hidden bg-[#010206] select-none">
       {/* 🌌 Cinematic Heliocentric Solar System Transit Loading Screen */}
-      {isLoading && <SolarSystemLoadingScreen onComplete={() => setIsLoading(false)} />}
+      {isLoading && (
+        <SolarSystemLoadingScreen
+          onComplete={() => {
+            setIsLoading(false);
+            setIsTourOpen(true);
+          }}
+        />
+      )}
 
       {/* ============================================================== */}
       {/* 1. FULL-BLEED EDGE-TO-EDGE 3D VIEWPORT CANVAS (100vw x 100vh) */}
@@ -594,11 +601,21 @@ function App() {
         onClose={() => setIsDataExplorerOpen(false)}
       />
 
-      {/* Guided Tour Walkthrough (Skipable) */}
+      {/* Guided Tour Walkthrough (Entry Popup & Non-blocking Real Explorer) */}
       <GuidedTourWalkthrough
         isOpen={isTourOpen}
         onClose={() => setIsTourOpen(false)}
         onSwitchView={(mode) => setViewMode(mode)}
+        onToggleFirstPerson={toggleFirstPerson}
+        isFirstPerson={isFirstPerson}
+        onOpenBenchmark={handleOpenBenchmark}
+        onCloseBenchmark={() => setIsRouteCompareOpen(false)}
+        onOpenAI={() => setIsAIOpen(true)}
+        onCloseAI={() => setIsAIOpen(false)}
+        onStartEVA={() => {
+          setSimulationProgress((p) => (p > 0 ? 0 : 5));
+          sfx.telemetry();
+        }}
       />
 
       {/* ============================================================== */}
