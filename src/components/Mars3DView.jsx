@@ -124,23 +124,23 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
       const ny = normals.getY(i);
       const slopeDeg = Math.acos(Math.min(1.0, Math.max(0.0, ny))) * (180 / Math.PI);
 
-      // Authentic Warm Martian Ochre/Orange Regolith
-      let r = 0.86 + (y * 0.016);
-      let g = 0.46 + (y * 0.012);
-      let b = 0.16;
+      // Bright, Vibrant Martian Orange Regolith
+      let r = 0.96 + (y * 0.016);
+      let g = 0.52 + (y * 0.012);
+      let b = 0.14;
 
       if (y < -2.0) {
         // Subtle basalt darkening in floor depressions
-        r *= 0.80;
-        g *= 0.72;
-        b *= 0.65;
+        r *= 0.86;
+        g *= 0.78;
+        b *= 0.70;
       }
 
       if (x < -10 && x > -50 && Math.abs(z) < 30) {
-        // Western Delta warm golden silt
-        r = 0.90;
-        g = 0.52;
-        b = 0.22;
+        // Western Delta bright golden silt
+        r = 1.00;
+        g = 0.58;
+        b = 0.20;
       }
 
       if (activeLayers.hazards && slopeDeg > 15.0) {
@@ -177,10 +177,10 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
       <meshStandardMaterial
         vertexColors
         normalMap={textures.normalMap}
-        normalScale={new THREE.Vector2(0.8, 0.8)}
+        normalScale={new THREE.Vector2(0.65, 0.65)}
         roughnessMap={textures.roughness}
-        roughness={dustStorm ? 0.95 : 0.84}
-        metalness={0.12}
+        roughness={dustStorm ? 0.90 : 0.68}
+        metalness={0.08}
         wireframe={activeLayers.topography}
       />
     </mesh>
@@ -686,14 +686,14 @@ export function Mars3DView({
 
         <MartianAtmosphere dustStorm={dustStorm} />
 
-        <ambientLight intensity={dustStorm ? 0.3 : 0.55} />
+        <ambientLight intensity={dustStorm ? 0.45 : 0.72} color="#fff7ed" />
         <directionalLight
           position={[60, 75, 45]}
-          intensity={dustStorm ? 1.4 : 2.8}
+          intensity={dustStorm ? 1.8 : 3.4}
           color={dustStorm ? "#ea580c" : "#ffffff"}
           castShadow
         />
-        <directionalLight position={[-45, -20, -45]} intensity={0.5} color="#c24810" />
+        <directionalLight position={[-45, -20, -45]} intensity={0.65} color="#ea580c" />
 
         {/* Camera Rig (Visor vs Orbit) */}
         <CameraRig
@@ -757,6 +757,31 @@ export function Mars3DView({
           />
         )}
       </Canvas>
+
+      {/* ================================================================ */}
+      {/* 📐 TOP FLOATING CANYON GEODESY & TRAVERSAL PHYSICS FORMULA HUD   */}
+      {/* ================================================================ */}
+      {!isFirstPerson && (
+        <div className="absolute top-16 md:top-20 left-1/2 -translate-x-1/2 z-20 pointer-events-none flex flex-col items-center px-4 max-w-full">
+          <div className="bg-[#040816]/90 border border-cyan-500/40 backdrop-blur-md px-3.5 py-1.5 rounded-full shadow-[0_4px_25px_rgba(0,0,0,0.85)] flex items-center gap-2 md:gap-3 font-mono text-[9px] md:text-[10px] text-slate-300 overflow-x-auto max-w-full">
+            <span className="text-cyan-400 font-bold flex items-center gap-1.5 shrink-0">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping" />
+              <span>CANYON GEODESY:</span>
+            </span>
+            <span className="text-amber-300 font-semibold tracking-wide shrink-0">
+              z(x,z) = z₀ + h_delta − D_max · cos(π · |z − f(x)| / 2W)
+            </span>
+            <span className="text-slate-600 shrink-0">|</span>
+            <span className="text-emerald-400 font-semibold shrink-0">
+              ∇z = arccos(N_y) · (180/π)
+            </span>
+            <span className="text-slate-600 shrink-0">|</span>
+            <span className="text-sky-300 font-semibold shrink-0">
+              A*: f(n) = g(n) + h(n) + C(∇z)
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* ================================================================ */}
       {/* 🥽 FIRST-PERSON INDIAN ASTRONAUT GOLD-COATED HELMET VISOR HUD    */}
