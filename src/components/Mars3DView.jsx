@@ -35,9 +35,31 @@ function MartianAtmosphere({ dustStorm }) {
   );
 }
 
-// Photorealistic Jezero Crater Surface Terrain
+// Photorealistic Jezero Crater Surface Terrain with Photographic Mars PBR Textures
 function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
   const meshRef = useRef();
+
+  // Load high-resolution photographic Mars PBR texture maps
+  const textures = useMemo(() => {
+    const loader = new THREE.TextureLoader();
+    const albedo = loader.load('/textures/mars_surface_albedo.jpg', (tex) => {
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(16, 16);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.needsUpdate = true;
+    });
+    const normal = loader.load('/textures/mars_surface_normal.jpg', (tex) => {
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(16, 16);
+      tex.needsUpdate = true;
+    });
+    const roughness = loader.load('/textures/mars_surface_roughness.jpg', (tex) => {
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(16, 16);
+      tex.needsUpdate = true;
+    });
+    return { albedo, normal, roughness };
+  }, []);
 
   const { geometry } = useMemo(() => {
     const size = 160;
@@ -151,8 +173,12 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
     <mesh ref={meshRef} geometry={geometry} onClick={handleClick} receiveShadow castShadow>
       <meshStandardMaterial
         vertexColors
-        roughness={dustStorm ? 0.95 : 0.84}
-        metalness={0.12}
+        map={textures.albedo}
+        normalMap={textures.normalMap}
+        normalScale={new THREE.Vector2(2.2, 2.2)}
+        roughnessMap={textures.roughness}
+        roughness={dustStorm ? 0.94 : 0.82}
+        metalness={0.06}
         wireframe={activeLayers.topography}
       />
     </mesh>
@@ -654,14 +680,14 @@ export function Mars3DView({
       >
         <MartianAtmosphere dustStorm={dustStorm} />
 
-        <ambientLight intensity={dustStorm ? 0.3 : 0.55} />
+        <ambientLight intensity={dustStorm ? 0.35 : 0.62} color="#fed7aa" />
         <directionalLight
-          position={[60, 75, 45]}
-          intensity={dustStorm ? 1.4 : 2.8}
-          color={dustStorm ? "#ea580c" : "#ffffff"}
+          position={[68, 52, 45]}
+          intensity={dustStorm ? 1.6 : 3.0}
+          color={dustStorm ? "#ea580c" : "#fff7ed"}
           castShadow
         />
-        <directionalLight position={[-45, -20, -45]} intensity={0.5} color="#c24810" />
+        <directionalLight position={[-45, 10, -45]} intensity={0.5} color="#c24810" />
 
         {/* Camera Rig (Visor vs Orbit) */}
         <CameraRig
