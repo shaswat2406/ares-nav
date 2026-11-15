@@ -240,12 +240,50 @@ export function GuidedTourWalkthrough({
   };
 
   return (
-    <div className="fixed bottom-4 right-4 md:bottom-6 md:right-8 z-50 max-w-sm md:max-w-md w-full select-none pointer-events-auto animate-in slide-in-from-bottom-5 duration-300">
-      {/* Tour Popup Card */}
+    <>
+      {/* 🔦 THEATRICAL AEROSPACE SPOTLIGHT BACKDROP */}
+      {/* Radiates a focused spotlight onto the tour card while subtly darkening the viewport on Step 1 so judges immediately lock focus */}
       <div
-        className={`relative w-full bg-[#040816]/95 border ${step.borderColor} rounded-2xl p-5 shadow-[0_12px_45px_rgba(0,0,0,0.85)] backdrop-blur-xl space-y-3.5`}
-        style={{ boxShadow: `0 10px 40px ${step.glowColor}` }}
-      >
+        className="fixed inset-0 pointer-events-none transition-all duration-700 z-40"
+        style={{
+          background:
+            currentStep === 0
+              ? 'radial-gradient(circle 520px at calc(100% - 240px) calc(100% - 220px), rgba(0, 240, 255, 0.12) 0%, rgba(2, 6, 23, 0.45) 55%, rgba(2, 6, 23, 0.82) 100%)'
+              : 'radial-gradient(circle 580px at calc(100% - 240px) calc(100% - 220px), rgba(0, 240, 255, 0.03) 0%, rgba(2, 6, 23, 0.12) 60%, rgba(2, 6, 23, 0.40) 100%)',
+          backdropFilter: currentStep === 0 ? 'brightness(0.72) contrast(1.06)' : 'none'
+        }}
+      />
+
+      {/* Floating Tour Guide Popup Container */}
+      <div className="fixed bottom-4 right-4 md:bottom-6 md:right-8 z-50 max-w-sm md:max-w-md w-full select-none pointer-events-auto animate-in slide-in-from-bottom-5 duration-300">
+        {/* 🎯 JUDGES CALLOUT BANNER (Guarantees judges immediately see & focus on the tour) */}
+        {currentStep === 0 && (
+          <div className="mb-2.5 px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-500/25 via-cyan-500/30 to-blue-500/25 border-2 border-cyan-400 text-[11px] font-mono font-extrabold text-cyan-200 flex items-center justify-between shadow-[0_0_25px_rgba(0,240,255,0.65)] animate-pulse backdrop-blur-md">
+            <span className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping" />
+              <Sparkles className="w-4 h-4 text-amber-300 animate-spin" style={{ animationDuration: '6s' }} />
+              <span className="tracking-wider">JUDGES: START MISSION TOUR HERE</span>
+            </span>
+            <span className="px-2 py-0.5 rounded bg-amber-400 text-slate-950 font-black text-[10px]">
+              STEP 1 / 6
+            </span>
+          </div>
+        )}
+
+        {/* Tour Popup Card */}
+        <div
+          className={`relative w-full bg-[#040816]/95 border-2 ${
+            currentStep === 0
+              ? 'border-cyan-400 shadow-[0_0_50px_rgba(0,240,255,0.6)]'
+              : `${step.borderColor} shadow-[0_12px_45px_rgba(0,0,0,0.85)]`
+          } rounded-2xl p-5 backdrop-blur-xl space-y-3.5 transition-all duration-300`}
+          style={{
+            boxShadow:
+              currentStep === 0
+                ? '0 0 50px rgba(0, 240, 255, 0.5), 0 0 100px rgba(0, 240, 255, 0.25)'
+                : `0 10px 40px ${step.glowColor}`
+          }}
+        >
         {/* Top Header: 1/N Step Badge, Title & Skip Option */}
         <div className="flex items-center justify-between border-b border-slate-800/80 pb-2.5">
           <div className="flex items-center gap-2">
@@ -387,6 +425,7 @@ export function GuidedTourWalkthrough({
         </div>
       </div>
     </div>
+    </>
   );
 }
 
