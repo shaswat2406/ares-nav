@@ -175,10 +175,10 @@ function PhotorealMartianTerrain({ activeLayers, onTerrainClick, dustStorm }) {
         vertexColors
         map={textures.albedo}
         normalMap={textures.normalMap}
-        normalScale={new THREE.Vector2(2.2, 2.2)}
+        normalScale={new THREE.Vector2(1.2, 1.2)}
         roughnessMap={textures.roughness}
-        roughness={dustStorm ? 0.94 : 0.82}
-        metalness={0.06}
+        roughness={dustStorm ? 0.95 : 0.84}
+        metalness={0.12}
         wireframe={activeLayers.topography}
       />
     </mesh>
@@ -678,16 +678,20 @@ export function Mars3DView({
         shadows
         gl={{ antialias: true }}
       >
+        {/* Infinite Horizon: Smoothly dissolves terrain boundaries into deep space */}
+        <color attach="background" args={['#010206']} />
+        <fogExp2 attach="fog" args={[dustStorm ? '#2a0e04' : '#010206', dustStorm ? 0.016 : 0.007]} />
+
         <MartianAtmosphere dustStorm={dustStorm} />
 
-        <ambientLight intensity={dustStorm ? 0.35 : 0.62} color="#fed7aa" />
+        <ambientLight intensity={dustStorm ? 0.3 : 0.55} />
         <directionalLight
-          position={[68, 52, 45]}
-          intensity={dustStorm ? 1.6 : 3.0}
-          color={dustStorm ? "#ea580c" : "#fff7ed"}
+          position={[60, 75, 45]}
+          intensity={dustStorm ? 1.4 : 2.8}
+          color={dustStorm ? "#ea580c" : "#ffffff"}
           castShadow
         />
-        <directionalLight position={[-45, 10, -45]} intensity={0.5} color="#c24810" />
+        <directionalLight position={[-45, -20, -45]} intensity={0.5} color="#c24810" />
 
         {/* Camera Rig (Visor vs Orbit) */}
         <CameraRig
